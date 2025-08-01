@@ -2,8 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   PaperAirplaneIcon,
   PaperClipIcon,
-  MicrophoneIcon,
-  PhotoIcon
+  MicrophoneIcon
 } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 
@@ -16,7 +15,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useChat();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,15 +33,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach(file => {
-        uploadFile(file);
-      });
-    }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
       Array.from(files).forEach(file => {
@@ -88,7 +77,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   return (
     <div className="border-t border-gray-200 bg-white p-4">
       <form onSubmit={handleSubmit} className="flex items-end space-x-3">
-        {/* File upload buttons */}
+        {/* File upload button */}
         <div className="flex space-x-1">
           <button
             type="button"
@@ -98,15 +87,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
             disabled={disabled}
           >
             <PaperClipIcon className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => imageInputRef.current?.click()}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Upload image"
-            disabled={disabled}
-          >
-            <PhotoIcon className="h-5 w-5" />
           </button>
           <button
             type="button"
@@ -157,22 +137,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         </button>
       </form>
 
-      {/* Hidden file inputs */}
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
         className="hidden"
         onChange={handleFileUpload}
-        accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls"
-      />
-      <input
-        ref={imageInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={handleImageUpload}
-        accept="image/*"
+        accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,image/*"
       />
 
       {isRecording && (

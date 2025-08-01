@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Bars3Icon,
+  ArrowUturnLeftIcon,
   DocumentIcon,
   ArrowDownTrayIcon,
   FolderIcon,
@@ -78,7 +78,7 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
               onClick={onToggle}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
             >
-              <Bars3Icon className="h-5 w-5" />
+              <ArrowUturnLeftIcon className="h-5 w-5" />
             </button>
           </div>
 
