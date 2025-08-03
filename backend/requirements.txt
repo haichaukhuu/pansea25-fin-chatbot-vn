@@ -1,0 +1,10 @@
+pydantic
+fastapi
+transformers
+requests
+python-dotenv
+httpx
+torch
+sentence-transformers
+numpy
+# Add any additional dependencies here
