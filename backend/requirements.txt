@@ -7,4 +7,12 @@ httpx
 torch
 sentence-transformers
 numpy
+uvicorn
+langchain
+python-jose[cryptography] 
+python-multipart 
+google-auth 
+google-auth-oauthlib 
+google-auth-httplib2
+
 # Add any additional dependencies here
