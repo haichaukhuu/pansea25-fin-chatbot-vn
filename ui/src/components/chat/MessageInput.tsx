@@ -75,14 +75,27 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
+    <div className="border-t p-4 shadow-lg" style={{ borderColor: '#21A691', backgroundColor: '#FFFFFF' }}>
       <form onSubmit={handleSubmit} className="flex items-end space-x-3">
         {/* File upload button */}
         <div className="flex space-x-1">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors border"
+            style={{
+              color: '#21A691',
+              borderColor: '#21A691',
+              backgroundColor: 'transparent'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#21A691';
+              e.currentTarget.style.color = '#FFFFFF';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = '#21A691';
+            }}
             title="Upload file"
             disabled={disabled}
           >
@@ -91,11 +104,24 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           <button
             type="button"
             onClick={handleVoiceInput}
-            className={`p-2 rounded-lg transition-colors ${
-              isRecording 
-                ? 'text-red-600 bg-red-50' 
-                : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
-            }`}
+            className="p-2 rounded-lg transition-colors border"
+            style={{
+              color: isRecording ? '#FF0000' : '#21A691',
+              backgroundColor: isRecording ? '#FFE5E5' : 'transparent',
+              borderColor: isRecording ? '#FF0000' : '#21A691'
+            }}
+            onMouseEnter={(e) => {
+              if (!isRecording) {
+                e.currentTarget.style.backgroundColor = '#21A691';
+                e.currentTarget.style.color = '#FFFFFF';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isRecording) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#21A691';
+              }
+            }}
             title="Voice input"
             disabled={disabled}
           >
@@ -112,11 +138,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
             placeholder="Type your message..."
             rows={1}
             disabled={disabled}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             style={{
               minHeight: '42px',
               maxHeight: '120px',
-              height: 'auto'
+              height: 'auto',
+              backgroundColor: '#FFFFFF',
+              borderColor: '#21A691',
+              color: '#27403E'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#87DF2C';
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#21A691';
+              e.currentTarget.style.boxShadow = 'none';
             }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -130,7 +167,27 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         <button
           type="submit"
           disabled={!message.trim() || disabled}
-          className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-md"
+          style={{
+            backgroundColor: '#87DF2C',
+            color: '#27403E'
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.backgroundColor = '#7BC628';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.backgroundColor = '#87DF2C';
+            }
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.3)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.boxShadow = 'none';
+          }}
           title="Send message"
         >
           <PaperAirplaneIcon className="h-5 w-5" />
@@ -148,8 +205,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       />
 
       {isRecording && (
-        <div className="mt-2 flex items-center space-x-2 text-red-600">
-          <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
+        <div className="mt-2 flex items-center space-x-2" style={{ color: '#FF0000' }}>
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#FF0000' }}></div>
           <span className="text-sm">Recording...</span>
         </div>
       )}

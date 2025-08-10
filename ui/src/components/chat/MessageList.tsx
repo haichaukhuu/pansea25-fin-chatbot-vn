@@ -12,9 +12,9 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
 
   if (!currentChat) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
+      <div className={`flex items-center justify-center h-full ${className}`} style={{ backgroundColor: '#FFFFFF' }}>
         <div className="text-center">
-          <div className="text-gray-400 mb-4">
+          <div className="mb-4" style={{ color: '#21A691' }}>
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -24,8 +24,8 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to Financial Chatbot</h3>
-          <p className="text-gray-500">
+          <h3 className="text-lg font-medium mb-2" style={{ color: '#27403E' }}>Welcome to Financial Chatbot</h3>
+          <p style={{ color: '#27403E' }}>
             Start a conversation or select a chat from the sidebar
           </p>
         </div>
@@ -35,9 +35,9 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
 
   if (currentChat.messages.length === 0) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
+      <div className={`flex items-center justify-center h-full ${className}`} style={{ backgroundColor: '#FFFFFF' }}>
         <div className="text-center">
-          <div className="text-blue-400 mb-4">
+          <div className="mb-4" style={{ color: '#21A691' }}>
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -47,11 +47,11 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Start a New Conversation</h3>
-          <p className="text-gray-500 mb-4">
+          <h3 className="text-lg font-medium mb-2" style={{ color: '#27403E' }}>Start a New Conversation</h3>
+          <p className="mb-4" style={{ color: '#27403E' }}>
             Ask me anything about financial planning, investments, or ASEAN markets
           </p>
-          <div className="space-y-2 text-sm text-gray-400">
+          <div className="space-y-2 text-sm" style={{ color: '#B4B4B2' }}>
             <p>• Get personalized financial advice</p>
             <p>• Learn about investment strategies</p>
             <p>• Explore ASEAN financial markets</p>
@@ -62,7 +62,7 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
   }
 
   return (
-    <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${className}`}>
+    <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${className}`} style={{ backgroundColor: '#FFFFFF' }}>
       {currentChat.messages.map((message) => (
         <MessageBubble key={message.id} message={message} />
       ))}
@@ -82,9 +82,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       {/* Avatar */}
       <div className={`flex-shrink-0 ${isUser ? 'order-2 ml-2' : 'order-1 mr-2'}`}>
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-            isUser ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'
-          }`}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shadow-md"
+          style={{
+            backgroundColor: isUser ? '#21A691' : '#27403E',
+            color: '#FFFFFF'
+          }}
         >
           {isUser ? 'U' : 'AI'}
         </div>
@@ -93,15 +95,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       {/* Message content */}
       <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${isUser ? 'order-1' : 'order-2'}`}>
         <div
-          className={`px-4 py-2 rounded-lg ${
-            isUser
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-900 border border-gray-200'
-          }`}
+          className="px-4 py-2 rounded-lg shadow-md"
+          style={{
+            backgroundColor: isUser ? '#21A691' : '#FFFFFF',
+            color: isUser ? '#FFFFFF' : '#27403E',
+            border: isUser ? 'none' : '2px solid #B4B4B2'
+          }}
         >
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         </div>
-        <div className={`mt-1 text-xs text-gray-500 ${isUser ? 'text-right' : 'text-left'}`}>
+        <div className={`mt-1 text-xs ${isUser ? 'text-right' : 'text-left'}`} style={{ color: '#B4B4B2' }}>
           {format(message.timestamp, 'HH:mm')}
         </div>
       </div>

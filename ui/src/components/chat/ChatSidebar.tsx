@@ -55,25 +55,40 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-30 w-80 bg-gray-900 transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-30 w-80 transform transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      `} style={{ backgroundColor: '#27403E' }}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h2 className="text-xl font-semibold text-white">Chats</h2>
+          <div className="flex items-center justify-between p-4" style={{ backgroundColor: '#1a322e', borderBottomColor: '#21A691', borderBottomWidth: '1px' }}>
+            <h2 className="text-xl font-semibold" style={{ color: '#FFFFFF' }}>Chats</h2>
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleNewChat}
-                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 rounded-lg transition-colors border"
+                style={{ 
+                  color: '#FFFFFF', 
+                  borderColor: '#21A691'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#21A691';
+                  e.currentTarget.style.borderColor = '#87DF2C';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = '#21A691';
+                }}
                 title="New Chat"
               >
                 <PlusIcon className="h-5 w-5" />
               </button>
               <button
                 onClick={onToggle}
-                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors lg:hidden"
+                className="p-2 rounded-lg transition-colors lg:hidden"
+                style={{ color: '#B4B4B2' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#B4B4B2'}
               >
                 <Bars3Icon className="h-5 w-5" />
               </button>
@@ -83,13 +98,27 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {/* Search */}
           <div className="p-4">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#B4B4B2' }} />
               <input
                 type="text"
                 placeholder="Search chats..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 rounded-lg transition-colors"
+                style={{ 
+                  backgroundColor: '#1a322e', 
+                  borderColor: '#21A691', 
+                  borderWidth: '1px',
+                  color: '#FFFFFF'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#87DF2C';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#21A691';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -101,13 +130,24 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <div
                   key={chat.id}
                   onClick={() => handleChatSelect(chat.id)}
-                  className={`
-                    group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors
-                    ${currentChat?.id === chat.id 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  className="group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
+                  style={{ 
+                    backgroundColor: currentChat?.id === chat.id ? '#21A691' : 'transparent',
+                    color: currentChat?.id === chat.id ? '#FFFFFF' : '#B4B4B2',
+                    border: currentChat?.id === chat.id ? '2px solid #87DF2C' : '1px solid transparent'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentChat?.id !== chat.id) {
+                      e.currentTarget.style.backgroundColor = '#1a322e';
+                      e.currentTarget.style.color = '#FFFFFF';
                     }
-                  `}
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentChat?.id !== chat.id) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#B4B4B2';
+                    }
+                  }}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
@@ -125,7 +165,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   </div>
                   <button
                     onClick={(e) => handleDeleteChat(e, chat.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-400 transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 p-1 transition-opacity"
+                    style={{ color: '#B4B4B2' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#ff6b6b'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#B4B4B2'}
                     title="Delete chat"
                   >
                     <TrashIcon className="h-4 w-4" />
@@ -133,7 +176,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </div>
               ))}
               {filteredChats.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8" style={{ color: '#B4B4B2' }}>
                   {searchQuery ? 'No chats found' : 'No chats yet'}
                 </div>
               )}
@@ -141,12 +184,28 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
 
           {/* User Profile Section */}
-          <div className="border-t border-gray-700 p-4">
+          <div className="p-4" style={{ backgroundColor: '#1a322e', borderTopColor: '#21A691', borderTopWidth: '1px' }}>
             <button
               onClick={onNavigateToProfile}
-              className="w-full flex items-center space-x-3 p-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              className="w-full flex items-center space-x-3 p-3 rounded-lg transition-colors border"
+              style={{ 
+                color: '#B4B4B2',
+                borderColor: '#21A691'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#21A691';
+                e.currentTarget.style.color = '#FFFFFF';
+                e.currentTarget.style.borderColor = '#87DF2C';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#B4B4B2';
+                e.currentTarget.style.borderColor = '#21A691';
+              }}
             >
-              <UserCircleIcon className="h-8 w-8" />
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#21A691' }}>
+                <UserCircleIcon className="h-6 w-6" style={{ color: '#FFFFFF' }} />
+              </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-medium">{user?.name}</p>
                 <p className="text-xs opacity-75">{user?.email}</p>
