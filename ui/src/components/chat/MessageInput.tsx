@@ -75,118 +75,84 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   };
 
   return (
-    <div className="border-t p-4 shadow-lg" style={{ borderColor: '#21A691', backgroundColor: '#FFFFFF' }}>
-      <form onSubmit={handleSubmit} className="flex items-end space-x-3">
+    <div className="p-4 shadow-lg bg-white">
+      <form 
+        onSubmit={handleSubmit} 
+        className="flex items-center w-full rounded-lg border-2"
+        style={{ borderColor: '#21A691', backgroundColor: '#FFFFFF' }}
+      >
         {/* File upload button */}
-        <div className="flex space-x-1">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 rounded-lg transition-colors border"
-            style={{
-              color: '#21A691',
-              borderColor: '#21A691',
-              backgroundColor: 'transparent'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#21A691';
-              e.currentTarget.style.color = '#FFFFFF';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#21A691';
-            }}
-            title="Upload file"
-            disabled={disabled}
-          >
-            <PaperClipIcon className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleVoiceInput}
-            className="p-2 rounded-lg transition-colors border"
-            style={{
-              color: isRecording ? '#FF0000' : '#21A691',
-              backgroundColor: isRecording ? '#FFE5E5' : 'transparent',
-              borderColor: isRecording ? '#FF0000' : '#21A691'
-            }}
-            onMouseEnter={(e) => {
-              if (!isRecording) {
-                e.currentTarget.style.backgroundColor = '#21A691';
-                e.currentTarget.style.color = '#FFFFFF';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isRecording) {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#21A691';
-              }
-            }}
-            title="Voice input"
-            disabled={disabled}
-          >
-            <MicrophoneIcon className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2 flex items-center justify-center transition-colors"
+          style={{ color: '#21A691', backgroundColor: 'transparent' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = '#87DF2C'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = '#21A691'; }}
+          title="Upload file"
+          disabled={disabled}
+        >
+          <PaperClipIcon className="h-5 w-5" />
+        </button>
+
+        {/* Voice input button */}
+        <button
+          type="button"
+          onClick={handleVoiceInput}
+          className="p-2 flex items-center justify-center transition-colors"
+          style={{
+            color: isRecording ? '#FF0000' : '#21A691',
+            backgroundColor: 'transparent'
+          }}
+          onMouseEnter={(e) => {
+            if (!isRecording) e.currentTarget.style.color = '#87DF2C';
+          }}
+          onMouseLeave={(e) => {
+            if (!isRecording) e.currentTarget.style.color = '#21A691';
+          }}
+          title="Voice input"
+          disabled={disabled}
+        >
+          <MicrophoneIcon className="h-5 w-5" />
+        </button>
 
         {/* Message input */}
-        <div className="flex-1 relative">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            rows={1}
-            disabled={disabled}
-            className="w-full px-4 py-2 border-2 rounded-lg focus:outline-none focus:ring-2 resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            style={{
-              minHeight: '42px',
-              maxHeight: '120px',
-              height: 'auto',
-              backgroundColor: '#FFFFFF',
-              borderColor: '#21A691',
-              color: '#27403E'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#87DF2C';
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = '#21A691';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-            }}
-          />
-        </div>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Type your message..."
+          rows={1}
+          disabled={disabled}
+          className="flex-1 px-4 py-2 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            minHeight: '42px',
+            maxHeight: '120px',
+            height: 'auto',
+            backgroundColor: '#FFFFFF',
+            color: '#27403E'
+          }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+          }}
+        />
 
         {/* Send button */}
         <button
           type="submit"
           disabled={!message.trim() || disabled}
-          className="p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-md"
+          className="p-3 flex items-center justify-center rounded-r-lg focus:outline-none disabled:opacity-50 transition-colors font-medium"
           style={{
             backgroundColor: '#87DF2C',
             color: '#27403E'
           }}
           onMouseEnter={(e) => {
-            if (!e.currentTarget.disabled) {
-              e.currentTarget.style.backgroundColor = '#7BC628';
-            }
+            if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#7BC628';
           }}
           onMouseLeave={(e) => {
-            if (!e.currentTarget.disabled) {
-              e.currentTarget.style.backgroundColor = '#87DF2C';
-            }
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.3)';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.boxShadow = 'none';
+            if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#87DF2C';
           }}
           title="Send message"
         >

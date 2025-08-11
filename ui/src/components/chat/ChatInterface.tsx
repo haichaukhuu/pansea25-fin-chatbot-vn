@@ -33,9 +33,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onNavigateToProfil
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="px-4 py-3 shadow-sm" style={{ backgroundColor: '#21A691', borderBottomColor: '#1d9485', borderBottomWidth: '1px' }}>
-          <div className="flex items-center justify-between">
+        {/* Header (aligned) */}
+        <div className="h-16 px-4 flex items-center justify-between" style={{ backgroundColor: '#21A691' }}>
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
@@ -59,18 +59,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onNavigateToProfil
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-                className="p-2 rounded-lg transition-colors"
-                style={{ color: '#FFFFFF' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d9485'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                title="Toggle files panel"
-              >
-                <ArchiveBoxIcon className="h-5 w-5" />
-              </button>
-            </div>
+            <button
+              onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: '#FFFFFF' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d9485'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              title="Toggle files panel"
+            >
+              <ArchiveBoxIcon className="h-5 w-5" />
+            </button>
           </div>
         </div>
 

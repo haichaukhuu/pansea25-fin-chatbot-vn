@@ -73,16 +73,13 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
       }}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b"
-            style={{
-              borderColor: '#27403E',
-              backgroundColor: '#21A691'
-            }}
+          {/* Header (aligned) */}
+          <div className="flex items-center justify-between h-16 px-4"
+            style={{ backgroundColor: '#21A691' }}
           >
             <div className="flex items-center space-x-2">
               <FolderIcon className="h-5 w-5" style={{ color: '#FFFFFF' }} />
-              <h2 className="text-lg font-semibold" style={{ color: '#FFFFFF' }}>Generated Files</h2>
+              <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>Generated Files</h2>
             </div>
             <button
               onClick={onToggle}

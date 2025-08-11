@@ -60,9 +60,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `} style={{ backgroundColor: '#27403E' }}>
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4" style={{ backgroundColor: '#1a322e', borderBottomColor: '#21A691', borderBottomWidth: '1px' }}>
-            <h2 className="text-xl font-semibold" style={{ color: '#FFFFFF' }}>Chats</h2>
+          {/* Header (aligned with main and files headers) */}
+          <div className="flex items-center justify-between h-16 px-4" style={{ backgroundColor: '#1a322e' }}>
+            <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>Chats</h2>
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleNewChat}
@@ -184,10 +184,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
 
           {/* User Profile Section */}
-          <div className="p-4" style={{ backgroundColor: '#1a322e', borderTopColor: '#21A691', borderTopWidth: '1px' }}>
+          <div className="p-4" style={{ backgroundColor: '#1a322e', }}>
             <button
               onClick={onNavigateToProfile}
-              className="w-full flex items-center space-x-3 p-3 rounded-lg transition-colors border"
+              className="w-full flex items-center space-x-3 p-3 rounded-lg transition-colors"
               style={{ 
                 color: '#B4B4B2',
                 borderColor: '#21A691'
