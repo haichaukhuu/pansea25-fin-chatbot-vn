@@ -9,6 +9,7 @@ sentence-transformers
 numpy
 uvicorn
 langchain
+langchain-community
 python-jose[cryptography] 
 python-multipart 
 google-auth 
