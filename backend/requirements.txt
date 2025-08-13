@@ -10,11 +10,14 @@ numpy
 uvicorn
 langchain
 langchain-community
+langchain-google-genai
+google-generativeai
 python-jose[cryptography] 
 python-multipart 
 google-auth 
 google-auth-oauthlib 
 google-auth-httplib2
-uvicorn
+chromadb
+tiktoken
 
 # Add any additional dependencies here
