@@ -1,4 +1,6 @@
 .env
 venv/
-guide/
+__pycache__
+*.pyc
 test_*
+guide/
