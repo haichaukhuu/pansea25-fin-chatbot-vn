@@ -1,2 +1,4 @@
 .env
 venv/
+guide/
+test_*

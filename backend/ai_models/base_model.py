@@ -1,16 +1,22 @@
-# backend/app/models/base_model.py
+# backend/ai_models/base_model.py
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union, AsyncIterator
 from dataclasses import dataclass
 import asyncio
 from enum import Enum
+from pydantic import BaseModel as PydanticBaseModel
 
 class ModelName(Enum):
-    SEA_LION_V35_70B = "sea_lion_v35_70b"
-    SEA_LION_V35_8B = "sea_lion_v35_8b"
-    SEA_LION_V3_8B = "sea_lion_v3_8b"
-    GEMINI_PRO = "gemini_pro"
-    GEMINI_FLASH = "gemini_flash"
+    # Gemini models
+    GEMINI_PRO = "gemini-pro"
+    GEMINI_FLASH = "gemini-1.5-flash"
+    GEMINI_PRO_VISION = "gemini-pro-vision"
+    
+    # Gemma models
+    GEMMA_3N_2B = "gemma-3n-2b-it"
+    GEMMA_3N_8B = "gemma-3n-8b-it"
+    GEMMA_2B = "gemma-2b-it"
+    GEMMA_7B = "gemma-7b-it"
 
 class ModelCapability(Enum):
     REASONING = "reasoning"
@@ -19,6 +25,8 @@ class ModelCapability(Enum):
     CREATIVE_RESPONSE = "creative_response"
     SUCCINCT_RESPONSE = "succinct_response"
     MULTILINGUAL = "multilingual"
+    VISION = "vision"
+    EFFICIENT = "efficient"  # For smaller, faster models like Gemma
 
 @dataclass
 class ModelResponse:
@@ -27,6 +35,7 @@ class ModelResponse:
     usage_stats: Dict[str, Any]
     confidence_score: Optional[float] = None
     is_fallback: bool = False
+    metadata: Optional[Dict[str, Any]] = None
 
 @dataclass
 class ModelConfig:
@@ -37,6 +46,7 @@ class ModelConfig:
     temperature: float
     is_primary: bool = True
     priority: int = 1  # Lower number = higher priority
+    api_key: Optional[str] = None
 
 class BaseModel(ABC):
     def __init__(self, config: ModelConfig):
@@ -54,6 +64,16 @@ class BaseModel(ABC):
         tools: List[Dict] = None
     ) -> ModelResponse:
         """Generate text response from the model"""
+        pass
+    
+    @abstractmethod
+    async def generate_streaming_response(
+        self,
+        prompt: str,
+        context: Dict[str, Any] = None,
+        system_prompt: str = None
+    ) -> AsyncIterator[str]:
+        """Generate streaming response from the model"""
         pass
     
     @abstractmethod

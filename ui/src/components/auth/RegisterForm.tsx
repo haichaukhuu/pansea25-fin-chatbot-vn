@@ -1,0 +1,242 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+interface RegisterFormProps {
+  onSuccess: () => void;
+}
+
+export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const success = await register(email, password, name);
+      if (success) {
+        onSuccess();
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setError('An error occurred during registration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        background: `linear-gradient(135deg, #B4B4B2 0%, #FFFFFF 100%)`
+      }}
+    >
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold" style={{ color: '#27403E' }}>
+            Create your account
+          </h2>
+          <p className="mt-2 text-center text-sm" style={{ color: '#27403E' }}>
+            Join the Financial Chatbot Assistant
+          </p>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="name" className="sr-only">
+                Full name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border rounded-t-md focus:outline-none focus:z-10 sm:text-sm"
+                style={{
+                  borderColor: '#21A691',
+                  backgroundColor: '#FFFFFF',
+                  color: '#27403E'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#87DF2C';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#21A691';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                placeholder="Full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="email-address" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email-address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border focus:outline-none focus:z-10 sm:text-sm"
+                style={{
+                  borderColor: '#21A691',
+                  backgroundColor: '#FFFFFF',
+                  color: '#27403E'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#87DF2C';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#21A691';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border focus:outline-none focus:z-10 sm:text-sm"
+                style={{
+                  borderColor: '#21A691',
+                  backgroundColor: '#FFFFFF',
+                  color: '#27403E'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#87DF2C';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#21A691';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="confirm-password" className="sr-only">
+                Confirm password
+              </label>
+              <input
+                id="confirm-password"
+                name="confirm-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border rounded-b-md focus:outline-none focus:z-10 sm:text-sm"
+                style={{
+                  borderColor: '#21A691',
+                  backgroundColor: '#FFFFFF',
+                  color: '#27403E'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#87DF2C';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#21A691';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="rounded-md p-4 border" 
+              style={{
+                backgroundColor: '#FFE5E5',
+                borderColor: '#FF0000'
+              }}
+            >
+              <div className="text-sm" style={{ color: '#FF0000' }}>{error}</div>
+            </div>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+              style={{
+                backgroundColor: '#87DF2C',
+                color: '#27403E'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#7BC628';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#87DF2C';
+                }
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(135, 223, 44, 0.3)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {loading ? 'Creating account...' : 'Sign up'}
+            </button>
+          </div>
+
+          <div className="text-center">
+            <Link
+              to="/login"
+              className="font-medium transition-colors"
+              style={{ color: '#21A691' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#87DF2C';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#21A691';
+              }}
+            >
+              Already have an account? Sign in
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
