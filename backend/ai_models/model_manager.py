@@ -21,6 +21,44 @@ class ModelManager:
         self.model_types: Dict[str, str] = {}  # Maps model name to type (llm, embedding, etc.)
         self.health_check_interval = 300  # 5 minutes
         self._health_check_task = None
+        
+        logger.info("ModelManager initializing...")
+        # Initialize with default models
+        self._initialize_default_models()
+        logger.info(f"ModelManager initialized with {len(self.models)} models: {list(self.models.keys())}")
+    
+    def _initialize_default_models(self):
+        """Initialize with default models from config"""
+        try:
+            import os
+            from .google_genai_model import GoogleGenAIModel
+            from .base_model import ModelConfig, ModelCapability
+            
+            # Get API key directly from environment
+            api_key = os.getenv("GOOGLE_GENAI_API_KEY")
+            if not api_key:
+                logger.error("No GOOGLE_GENAI_API_KEY found in environment")
+                return
+            
+            # Create Gemma model with hardcoded config
+            config = ModelConfig(
+                name="Gemma 3 27B IT",
+                model_id="gemma-3-27b-it",
+                temperature=0.7,
+                max_tokens=4096,
+                is_primary=True,
+                capabilities=[ModelCapability.CHAT, ModelCapability.TEXT_GENERATION],
+                priority=1
+            )
+            
+            gemma_model = GoogleGenAIModel(config, api_key)
+            self.add_model("gemma", gemma_model, "llm")
+            logger.info("Initialized Gemma model successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize default models: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def add_model(self, name: str, model: BaseModel, model_type: str = "llm"):
         """Add a model to the manager"""
@@ -31,6 +69,10 @@ class ModelManager:
     def get_model(self, name: str) -> Optional[BaseModel]:
         """Get a specific model by name"""
         return self.models.get(name)
+    
+    def get_available_models(self) -> List[str]:
+        """Get list of available model names"""
+        return list(self.models.keys())
     
     def get_models_by_type(self, model_type: str) -> List[BaseModel]:
         """Get all models of a specific type"""
@@ -50,6 +92,18 @@ class ModelManager:
         # If no primary model, return the first available one
         available_models = [m for m in models if m.is_available]
         return available_models[0] if available_models else None
+    
+    async def check_model_health(self, model_name: str) -> bool:
+        """Check health of a specific model"""
+        model = self.get_model(model_name)
+        if not model:
+            return False
+        
+        try:
+            return await model.health_check()
+        except Exception as e:
+            logger.error(f"Health check failed for {model_name}: {e}")
+            return False
     
     async def generate_response(
         self,
@@ -82,7 +136,7 @@ class ModelManager:
             raise RuntimeError(f"No available {model_type} models")
         
         # Sort by priority (lower number = higher priority)
-        available_models.sort(key=lambda m: m.config.priority)
+        available_models.sort(key=lambda m: getattr(m.config, 'priority', 999))
         
         # Try models in order of priority
         last_error = None
@@ -131,7 +185,7 @@ class ModelManager:
             raise RuntimeError(f"No available {model_type} models")
         
         # Sort by priority
-        available_models.sort(key=lambda m: m.config.priority)
+        available_models.sort(key=lambda m: getattr(m.config, 'priority', 999))
         
         # Try models in order of priority
         last_error = None
@@ -177,7 +231,7 @@ class ModelManager:
             raise RuntimeError(f"No available {model_type} models")
         
         # Sort by priority
-        available_models.sort(key=lambda m: m.config.priority)
+        available_models.sort(key=lambda m: getattr(m.config, 'priority', 999))
         
         # Try models in order of priority
         last_error = None
