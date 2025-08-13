@@ -27,6 +27,8 @@ class ModelCapability(Enum):
     MULTILINGUAL = "multilingual"
     VISION = "vision"
     EFFICIENT = "efficient"  # For smaller, faster models like Gemma
+    CHAT = "chat"  # For chat-based models
+    TEXT_GENERATION = "text_generation"  # For text generation models
 
 @dataclass
 class ModelResponse:
