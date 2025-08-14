@@ -56,26 +56,25 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
       {/* Mobile backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 bg-transparent backdrop-blur-sm z-20 lg:hidden"
           onClick={onToggle}
         />
       )}
       
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 right-0 z-30 w-80 border-l transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 right-0 z-30 w-80 transform transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
       `}
       style={{
-        backgroundColor: '#B4B4B2',
-        borderColor: '#27403E'
+        backgroundColor: '#27403E'
       }}
       >
         <div className="flex flex-col h-full">
           {/* Header (aligned) */}
           <div className="flex items-center justify-between h-16 px-4"
-            style={{ backgroundColor: '#21A691' }}
+            style={{ backgroundColor: '#1a322e' }}
           >
             <div className="flex items-center space-x-2">
               <FolderIcon className="h-5 w-5" style={{ color: '#FFFFFF' }} />
@@ -116,7 +115,7 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
                     <div key={dateKey}>
                       <div className="flex items-center space-x-2 mb-3">
                         <CalendarIcon className="h-4 w-4" style={{ color: '#87DF2C' }} />
-                        <h3 className="text-sm font-medium" style={{ color: '#27403E' }}>
+                        <h3 className="text-sm font-medium" style={{ color: '#ffffff' }}>
                           {getDateLabel(dateKey)}
                         </h3>
                       </div>
@@ -148,7 +147,7 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
                                   <p className="text-sm font-medium truncate" style={{ color: '#27403E' }}>
                                     {file.name}
                                   </p>
-                                  <div className="flex items-center space-x-2 text-xs" style={{ color: '#B4B4B2' }}>
+                                  <div className="flex items-center space-x-2 text-xs" style={{ color: '#000000' }}>
                                     <span>{formatFileSize(file.size)}</span>
                                     <span>•</span>
                                     <span>{format(file.createdAt, 'HH:mm')}</span>
@@ -163,13 +162,13 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
                                   link.download = file.name;
                                   link.click();
                                 }}
-                                className="opacity-0 group-hover:opacity-100 p-1 transition-opacity"
-                                style={{ color: '#B4B4B2' }}
+                                className="group-hover:opacity-100 p-1"
+                                style={{ color: '#000000' }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.color = '#87DF2C';
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = '#B4B4B2';
+                                  e.currentTarget.style.color = '#000000';
                                 }}
                                 title="Download file"
                               >

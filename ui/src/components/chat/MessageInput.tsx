@@ -79,14 +79,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       <form 
         onSubmit={handleSubmit} 
         className="flex items-center w-full rounded-lg border-2"
-        style={{ borderColor: '#21A691', backgroundColor: '#FFFFFF' }}
+        style={{ borderColor: '#21A691', backgroundColor: '#eeeeee' }}
       >
         {/* File upload button */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           className="p-2 flex items-center justify-center transition-colors"
-          style={{ color: '#21A691', backgroundColor: 'transparent' }}
+          style={{ color: '#21A691', backgroundColor: '#eeeeee' }}
           onMouseEnter={(e) => { e.currentTarget.style.color = '#87DF2C'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = '#21A691'; }}
           title="Upload file"
@@ -102,7 +102,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           className="p-2 flex items-center justify-center transition-colors"
           style={{
             color: isRecording ? '#FF0000' : '#21A691',
-            backgroundColor: 'transparent'
+            backgroundColor: '#eeeeee'
           }}
           onMouseEnter={(e) => {
             if (!isRecording) e.currentTarget.style.color = '#87DF2C';
@@ -129,7 +129,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
             minHeight: '42px',
             maxHeight: '120px',
             height: 'auto',
-            backgroundColor: '#FFFFFF',
+            backgroundColor: '#EEEEEE',
             color: '#27403E'
           }}
           onInput={(e) => {

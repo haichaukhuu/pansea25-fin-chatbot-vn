@@ -5,11 +5,12 @@ import {
   MagnifyingGlassIcon,
   UserCircleIcon,
   Cog6ToothIcon,
-  TrashIcon
+  TrashIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -27,6 +28,23 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const { user } = useAuth();
 
   const filteredChats = searchQuery.trim() ? searchChats(searchQuery) : chats;
+
+  // Group chats by date
+  const groupedChats = filteredChats.reduce((groups, chat) => {
+    const dateKey = format(startOfDay(chat.updatedAt), 'yyyy-MM-dd');
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(chat);
+    return groups;
+  }, {} as Record<string, typeof filteredChats>);
+
+  const getDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMM d, yyyy');
+  };
 
   const handleNewChat = () => {
     createNewChat();
@@ -48,7 +66,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       {/* Mobile backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 bg-transparent backdrop-blur-sm z-20 lg:hidden"
           onClick={onToggle}
         />
       )}
@@ -65,30 +83,35 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>Chats</h2>
             <div className="flex items-center space-x-2">
               <button
-                onClick={handleNewChat}
-                className="p-2 rounded-lg transition-colors border"
-                style={{ 
-                  color: '#FFFFFF', 
-                  borderColor: '#21A691'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#21A691';
-                  e.currentTarget.style.borderColor = '#87DF2C';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.borderColor = '#21A691';
-                }}
-                title="New Chat"
-              >
-                <PlusIcon className="h-5 w-5" />
-              </button>
+                    onClick={handleNewChat}
+                    className="p-2 rounded-lg transition-colors border"
+                    style={{ 
+                      backgroundColor: '#FFFFFF',
+                      color: '#000000',
+                      borderColor: '#21A691',
+                      borderWidth: '1px',
+                      boxShadow: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#21A691';
+                      e.currentTarget.style.borderColor = '#87DF2C';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FFFFFF';
+                      e.currentTarget.style.borderColor = '#21A691';
+                      e.currentTarget.style.color = '#000000';
+                    }}
+                    title="New Chat"
+                  >
+                    <PlusIcon className="h-5 w-5" style={{ color: '#000000' }} />
+                  </button>
               <button
                 onClick={onToggle}
                 className="p-2 rounded-lg transition-colors lg:hidden"
                 style={{ color: '#B4B4B2' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#FFFFFF'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#B4B4B2'}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#000000'}
               >
                 <Bars3Icon className="h-5 w-5" />
               </button>
@@ -98,7 +121,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {/* Search */}
           <div className="p-4">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#B4B4B2' }} />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#000000' }} />
               <input
                 type="text"
                 placeholder="Search chats..."
@@ -106,10 +129,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg transition-colors"
                 style={{ 
-                  backgroundColor: '#1a322e', 
+                  backgroundColor: '#FFFFFF', 
                   borderColor: '#21A691', 
                   borderWidth: '1px',
-                  color: '#FFFFFF'
+                  color: '#000000'
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = '#87DF2C';
@@ -125,62 +148,79 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
           {/* Chat List */}
           <div className="flex-1 overflow-y-auto">
-            <div className="space-y-1 p-2">
-              {filteredChats.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => handleChatSelect(chat.id)}
-                  className="group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
-                  style={{ 
-                    backgroundColor: currentChat?.id === chat.id ? '#21A691' : 'transparent',
-                    color: currentChat?.id === chat.id ? '#FFFFFF' : '#B4B4B2',
-                    border: currentChat?.id === chat.id ? '2px solid #87DF2C' : '1px solid transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentChat?.id !== chat.id) {
-                      e.currentTarget.style.backgroundColor = '#1a322e';
-                      e.currentTarget.style.color = '#FFFFFF';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentChat?.id !== chat.id) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#B4B4B2';
-                    }
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {chat.title}
-                    </p>
-                    <p className="text-xs opacity-75 truncate">
-                      {chat.messages.length > 0 
-                        ? chat.messages[chat.messages.length - 1].content.slice(0, 50) + '...'
-                        : 'No messages'
-                      }
-                    </p>
-                    <p className="text-xs opacity-50">
-                      {format(chat.updatedAt, 'MMM d, yyyy')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => handleDeleteChat(e, chat.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 transition-opacity"
-                    style={{ color: '#B4B4B2' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#ff6b6b'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#B4B4B2'}
-                    title="Delete chat"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              {filteredChats.length === 0 && (
-                <div className="text-center py-8" style={{ color: '#B4B4B2' }}>
-                  {searchQuery ? 'No chats found' : 'No chats yet'}
-                </div>
-              )}
-            </div>
+            {Object.keys(groupedChats).length === 0 ? (
+              <div className="text-center py-8" style={{ color: '#B4B4B2' }}>
+                {searchQuery ? 'No chats found' : 'No chats yet'}
+              </div>
+            ) : (
+              <div className="p-2 space-y-6">
+                {Object.entries(groupedChats)
+                  .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+                  .map(([dateKey, dateChats]) => (
+                    <div key={dateKey}>
+                      <div className="flex items-center space-x-2 mb-3 px-1">
+                        <CalendarIcon className="h-4 w-4" style={{ color: '#87DF2C' }} />
+                        <h3 className="text-sm font-medium" style={{ color: '#FFFFFF' }}>
+                          {getDateLabel(dateKey)}
+                        </h3>
+                      </div>
+                      <div className="space-y-1">
+                        {dateChats
+                          .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+                          .map((chat) => (
+                            <div
+                              key={chat.id}
+                              onClick={() => handleChatSelect(chat.id)}
+                              className="group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
+                              style={{ 
+                                backgroundColor: currentChat?.id === chat.id ? '#21A691' : 'transparent',
+                                color: currentChat?.id === chat.id ? '#FFFFFF' : '#B4B4B2',
+                                border: currentChat?.id === chat.id ? '2px solid #87DF2C' : '1px solid transparent'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (currentChat?.id !== chat.id) {
+                                  e.currentTarget.style.backgroundColor = '#1a322e';
+                                  e.currentTarget.style.color = '#FFFFFF';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (currentChat?.id !== chat.id) {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  e.currentTarget.style.color = '#B4B4B2';
+                                }
+                              }}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {chat.title}
+                                </p>
+                                <p className="text-xs opacity-75 truncate">
+                                  {chat.messages.length > 0 
+                                    ? chat.messages[chat.messages.length - 1].content.slice(0, 50) + '...'
+                                    : 'No messages'
+                                  }
+                                </p>
+                                <p className="text-xs opacity-50">
+                                  {format(chat.updatedAt, 'HH:mm')}
+                                </p>
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteChat(e, chat.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1 transition-opacity"
+                                style={{ color: '#B4B4B2' }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = '#ff6b6b'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = '#B4B4B2'}
+                                title="Delete chat"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
           {/* User Profile Section */}
