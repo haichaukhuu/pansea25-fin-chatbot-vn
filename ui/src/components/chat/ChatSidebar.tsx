@@ -174,19 +174,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               className="group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors"
                               style={{ 
                                 backgroundColor: currentChat?.id === chat.id ? '#21A691' : 'transparent',
-                                color: currentChat?.id === chat.id ? '#FFFFFF' : '#B4B4B2',
-                                border: currentChat?.id === chat.id ? '2px solid #87DF2C' : '1px solid transparent'
+                                color: '#FFFFFF'
                               }}
                               onMouseEnter={(e) => {
                                 if (currentChat?.id !== chat.id) {
                                   e.currentTarget.style.backgroundColor = '#1a322e';
-                                  e.currentTarget.style.color = '#FFFFFF';
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (currentChat?.id !== chat.id) {
                                   e.currentTarget.style.backgroundColor = 'transparent';
-                                  e.currentTarget.style.color = '#B4B4B2';
                                 }
                               }}
                             >
@@ -206,10 +203,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               </div>
                               <button
                                 onClick={(e) => handleDeleteChat(e, chat.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1 transition-opacity"
-                                style={{ color: '#B4B4B2' }}
+                                className="opacity-100 p-1 transition-opacity"
+                                style={{ color: '#FFFFFF' }}
                                 onMouseEnter={(e) => e.currentTarget.style.color = '#ff6b6b'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#B4B4B2'}
+                                onMouseLeave={(e) => e.currentTarget.style.color = '#FFFFFF'}
                                 title="Delete chat"
                               >
                                 <TrashIcon className="h-4 w-4" />
