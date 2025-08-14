@@ -84,23 +84,25 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <div className="flex items-center space-x-2">
               <button
                     onClick={handleNewChat}
-                    className="p-2 rounded-lg transition-colors border"
+                    className="p-2 rounded-lg transition-colors"
                     style={{ 
                       backgroundColor: '#FFFFFF',
                       color: '#000000',
-                      borderColor: '#21A691',
-                      borderWidth: '1px',
                       boxShadow: 'none'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = '#21A691';
-                      e.currentTarget.style.borderColor = '#87DF2C';
                       e.currentTarget.style.color = '#FFFFFF';
+
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (icon) icon.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = '#FFFFFF';
-                      e.currentTarget.style.borderColor = '#21A691';
                       e.currentTarget.style.color = '#000000';
+
+                      const icon = e.currentTarget.querySelector('svg');
+                      if (icon) icon.style.color = '#000000';
                     }}
                     title="New Chat"
                   >
