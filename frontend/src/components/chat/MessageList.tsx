@@ -1,6 +1,6 @@
 import React from 'react';
-import { format } from 'date-fns';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 import type { Message } from '../../types';
 
 interface MessageListProps {
@@ -9,6 +9,7 @@ interface MessageListProps {
 
 export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
   const { currentChat } = useChat();
+  const { t } = useLanguage();
 
   if (!currentChat) {
     return (
@@ -24,9 +25,9 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium mb-2" style={{ color: '#27403E' }}>Welcome to Financial Chatbot</h3>
+          <h3 className="text-lg font-medium mb-2" style={{ color: '#27403E' }}>{t('welcome.title')}</h3>
           <p style={{ color: '#27403E' }}>
-            Start a conversation or select a chat from the sidebar
+            {t('welcome.subtitle')}
           </p>
         </div>
       </div>
@@ -47,14 +48,14 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium mb-2" style={{ color: '#27403E' }}>Start a New Conversation</h3>
+          <h3 className="text-lg font-medium mb-2" style={{ color: '#27403E' }}>{t('welcome.new_conversation')}</h3>
           <p className="mb-4" style={{ color: '#27403E' }}>
-            Ask me anything about financial planning, investments, or ASEAN markets
+            {t('welcome.description')}
           </p>
           <div className="space-y-2 text-sm" style={{ color: '#27403E' }}>
-            <p>• Get personalized financial advice</p>
-            <p>• Learn about investment strategies</p>
-            <p>• Explore ASEAN financial markets</p>
+            <p>{t('welcome.bullet1')}</p>
+            <p>{t('welcome.bullet2')}</p>
+            <p>{t('welcome.bullet3')}</p>
           </div>
         </div>
       </div>
@@ -76,6 +77,7 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
+  const { formatTime } = useLanguage();
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -105,7 +107,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         </div>
         <div className={`mt-1 text-xs ${isUser ? 'text-right' : 'text-left'}`} style={{ color: '#B4B4B2' }}>
-          {format(message.timestamp, 'HH:mm')}
+          {formatTime(message.timestamp)}
         </div>
       </div>
     </div>

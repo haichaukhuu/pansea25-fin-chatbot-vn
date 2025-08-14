@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import LanguageSelector from '../common/LanguageSelector';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -12,6 +14,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,12 +48,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }}
     >
       <div className="max-w-md w-full space-y-8">
+        {/* Language Selector */}
+        <div className="flex justify-end">
+          <LanguageSelector />
+        </div>
+        
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold" style={{ color: '#ffffff' }}>
-            Sign in to your account
+            {t('login.title')}
           </h2>
           <p className="mt-2 text-center text-sm" style={{ color: '#ffffff' }}>
-            Financial Chatbot Assistant
+            {t('header.subtitle')}
           </p>
           {/* <div className="mt-4 p-4 rounded-md" 
             style={{ 
@@ -165,7 +173,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? t('profile.signing_in') : t('profile.sign_in')}
             </button>
           </div>
 
@@ -181,7 +189,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                 e.currentTarget.style.color = '#ffffff';
               }}
             >
-              Don't have an account? Sign up
+              {t('profile.dont_have_account')}
             </Link>
           </div>
         </form>

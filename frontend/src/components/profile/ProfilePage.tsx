@@ -4,10 +4,10 @@ import {
   UserCircleIcon,
   EnvelopeIcon,
   KeyIcon,
-  BellIcon,
-  GlobeAltIcon
+  BellIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -15,9 +15,9 @@ interface ProfilePageProps {
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('profile');
   const [notifications, setNotifications] = useState(true);
-  const [language, setLanguage] = useState('en');
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out?')) {
@@ -61,7 +61,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
               >
                 <ArrowLeftIcon className="h-5 w-5" />
               </button>
-              <h1 className="text-2xl font-bold text-white drop-shadow-lg">Profile & Settings</h1>
+              <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('profile.title')}</h1>
             </div>
           </div>
         </div>
@@ -98,7 +98,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 }}
               >
                 <UserCircleIcon className="h-5 w-5" />
-                <span>Profile</span>
+                <span>{t('profile.profile')}</span>
               </button>
               <button
                 onClick={() => setActiveTab('account')}
@@ -124,7 +124,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 }}
               >
                 <KeyIcon className="h-5 w-5" />
-                <span>Account</span>
+                <span>{t('profile.account')}</span>
               </button>
               <button
                 onClick={() => setActiveTab('preferences')}
@@ -150,7 +150,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 }}
               >
                 <BellIcon className="h-5 w-5" />
-                <span>Preferences</span>
+                <span>{t('profile.preferences')}</span>
               </button>
             </nav>
           </div>
@@ -159,7 +159,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           <div className="flex-1">
             {activeTab === 'profile' && (
               <div className="rounded-lg shadow p-6 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#21A691' }}>
-                <h2 className="text-lg font-semibold mb-6" style={{ color: '#27403E' }}>Profile Information</h2>
+                <h2 className="text-lg font-semibold mb-6" style={{ color: '#27403E' }}>{t('profile.profile_info')}</h2>
                 
                 <div className="space-y-6">
                   {/* Avatar */}
@@ -181,7 +181,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                         e.currentTarget.style.color = '#ffffff';
                       }}
                       >
-                        Change Avatar
+                        {t('profile.change_avatar')}
                       </button>
                       <p className="text-sm mt-1" style={{ color: '#B4B4B2' }}>JPG, GIF or PNG. Max size 1MB.</p>
                     </div>
@@ -190,7 +190,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                   {/* Name */}
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: '#27403E' }}>
-                      Full Name
+                      {t('profile.full_name')}
                     </label>
                     <input
                       type="text"
@@ -215,7 +215,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                   {/* Email */}
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: '#27403E' }}>
-                      Email Address
+                      {t('profile.email_address')}
                     </label>
                     <div className="relative">
                       <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#B4B4B2' }} />
@@ -252,7 +252,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                         e.currentTarget.style.color = '#ffffff';
                       }}
                     >
-                      Save Changes
+                      {t('profile.save_changes')}
                     </button>
                   </div>
                 </div>
@@ -370,27 +370,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                     </div>
                   </div> */}
 
-                  {/* Language */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark-700 mb-2">
-                      Language
-                    </label>
-                    <div className="relative">
-                      <GlobeAltIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
-                      <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                      >
-                        <option value="en">English</option>
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="ms">Bahasa Malaysia</option>
-                        <option value="th">Thai</option>
-                        <option value="vi">Vietnamese</option>
-                        <option value="tl">Filipino</option>
-                      </select>
-                    </div>
-                  </div>
+
 
                   {/* Notifications */}
                   <div>

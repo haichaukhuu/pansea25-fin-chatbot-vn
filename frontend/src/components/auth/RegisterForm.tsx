@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import LanguageSelector from '../common/LanguageSelector';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -14,6 +16,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,12 +61,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       }}
     >
       <div className="max-w-md w-full space-y-8">
+        {/* Language Selector */}
+        <div className="flex justify-end">
+          <LanguageSelector />
+        </div>
+        
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold" style={{ color: '#ffffff' }}>
-            Create your account
+            {t('register.title')}
           </h2>
           <p className="mt-2 text-center text-sm" style={{ color: '#ffffff' }}>
-            Join the Financial Chatbot Assistant
+            {t('header.subtitle')}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -224,7 +232,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              {loading ? 'Creating account...' : 'Sign up'}
+              {loading ? t('profile.creating_account') : t('profile.sign_up')}
             </button>
           </div>
 
@@ -240,7 +248,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 e.currentTarget.style.color = '#ffffff';
               }}
             >
-              Already have an account? Sign in
+              {t('profile.already_have_account')}
             </Link>
           </div>
         </form>

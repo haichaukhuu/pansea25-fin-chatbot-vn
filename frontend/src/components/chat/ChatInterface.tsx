@@ -8,6 +8,8 @@ import { FilesSidebar } from './FilesSidebar';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
+import LanguageSelector from '../common/LanguageSelector';
 
 interface ChatInterfaceProps {
   onNavigateToProfile: () => void;
@@ -17,6 +19,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onNavigateToProfil
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const { currentChat, sendMessage } = useChat();
+  const { t } = useLanguage();
 
   const handleSendMessage = (message: string) => {
     sendMessage(message);
@@ -46,29 +49,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onNavigateToProfil
               >
                 <Bars3Icon className="h-5 w-5" />
               </button>
-              <div className="hidden lg:block">
-                <div className="flex items-center space-x-2">
-                  <h1 className="text-lg font-semibold" style={{ color: '#FFFFFF' }}>
-                    {currentChat?.title || 'Financial Chatbot'}
-                  </h1>
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#87DF2C' }}></div>
+                              <div className="hidden lg:block">
+                  <div className="flex items-center space-x-2">
+                    <h1 className="text-lg font-semibold" style={{ color: '#FFFFFF' }}>
+                      {currentChat?.title || t('header.title')}
+                    </h1>
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#87DF2C' }}></div>
+                  </div>
+                  <p className="text-sm" style={{ color: '#E6F7F4' }}>
+                    {t('header.subtitle')}
+                  </p>
                 </div>
-                <p className="text-sm" style={{ color: '#E6F7F4' }}>
-                  AI-powered financial assistant for ASEAN markets
-                </p>
-              </div>
             </div>
             
-            <button
-              onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: '#FFFFFF' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d9485'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              title="Toggle files panel"
-            >
-              <ArchiveBoxIcon className="h-5 w-5" />
-            </button>
+            <div className="flex items-center space-x-3">
+              <LanguageSelector />
+              <button
+                onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: '#FFFFFF' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d9485'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                title="Toggle files panel"
+              >
+                <ArchiveBoxIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
 
