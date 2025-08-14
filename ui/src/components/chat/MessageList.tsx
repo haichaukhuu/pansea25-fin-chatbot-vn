@@ -51,7 +51,7 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
           <p className="mb-4" style={{ color: '#27403E' }}>
             Ask me anything about financial planning, investments, or ASEAN markets
           </p>
-          <div className="space-y-2 text-sm" style={{ color: '#B4B4B2' }}>
+          <div className="space-y-2 text-sm" style={{ color: '#27403E' }}>
             <p>• Get personalized financial advice</p>
             <p>• Learn about investment strategies</p>
             <p>• Explore ASEAN financial markets</p>
