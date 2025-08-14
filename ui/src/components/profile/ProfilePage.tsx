@@ -295,7 +295,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                           className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                         />
                       </div>
-                      <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                      <button className="px-4 py-2 rounded-lg transition-colors"
+                        style={{ backgroundColor: '#21A691', color: '#ffffff' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#87DF2C';
+                          e.currentTarget.style.color = '#000000';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '#21A691';
+                          e.currentTarget.style.color = '#ffffff';
+                        }}
+                      >
                         Update Password
                       </button>
                     </div>
@@ -413,7 +423,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                     >
                       Sign Out
                     </button>
-                    <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <button className="px-4 py-2 rounded-lg transition-colors"
+                      style={{ backgroundColor: '#21A691', color: '#ffffff' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#87DF2C';
+                        e.currentTarget.style.color = '#000000';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#21A691';
+                        e.currentTarget.style.color = '#ffffff';
+                      }}
+                    >
                       Save Preferences
                     </button>
                   </div>
