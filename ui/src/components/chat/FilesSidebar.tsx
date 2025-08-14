@@ -64,8 +64,8 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
       {/* Sidebar */}
       <div className={`
         fixed inset-y-0 right-0 z-30 w-80 transform transition-transform duration-300 ease-in-out
-        lg:relative lg:translate-x-0
-        ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+        lg:relative lg:block
+        ${isOpen ? 'translate-x-0' : 'translate-x-full lg:hidden'}
       `}
       style={{
         backgroundColor: '#27403E'
@@ -82,7 +82,7 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
             </div>
             <button
               onClick={onToggle}
-              className="p-2 rounded-lg transition-colors lg:hidden"
+              className="p-2 rounded-lg transition-colors"
               style={{ color: '#FFFFFF' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#87DF2C';

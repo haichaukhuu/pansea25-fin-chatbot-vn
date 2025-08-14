@@ -33,23 +33,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative"
       style={{
-        background: `linear-gradient(135deg, #B4B4B2 0%, #FFFFFF 100%)`
+        background: `linear-gradient(135deg, #B4B4B2 0%, #FFFFFF 100%)`, // Fallback gradient
+        // backgroundImage: `url('/login-background.svg')`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('/background3.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
       }}
     >
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold" style={{ color: '#27403E' }}>
+          <h2 className="mt-6 text-center text-3xl font-extrabold" style={{ color: '#ffffff' }}>
             Sign in to your account
           </h2>
-          <p className="mt-2 text-center text-sm" style={{ color: '#27403E' }}>
+          <p className="mt-2 text-center text-sm" style={{ color: '#ffffff' }}>
             Financial Chatbot Assistant
           </p>
-          <div className="mt-4 p-4 border rounded-md" 
+          {/* <div className="mt-4 p-4 rounded-md" 
             style={{ 
-              backgroundColor: '#21A691', 
-              borderColor: '#87DF2C'
+              backgroundColor: '#21A691'
             }}
           >
             <p className="text-sm" style={{ color: '#FFFFFF' }}>
@@ -57,7 +62,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               Email: admin123@gmail.com<br />
               Password: admin123
             </p>
-          </div>
+          </div> */}
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
@@ -138,17 +143,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors"
               style={{
-                backgroundColor: '#87DF2C',
-                color: '#27403E'
+                backgroundColor: '#21A691',
+                color: '#ffffff'
               }}
               onMouseEnter={(e) => {
                 if (!e.currentTarget.disabled) {
                   e.currentTarget.style.backgroundColor = '#7BC628';
+                  e.currentTarget.style.color = '#000000';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!e.currentTarget.disabled) {
-                  e.currentTarget.style.backgroundColor = '#87DF2C';
+                  e.currentTarget.style.backgroundColor = '#21A691';
+                  e.currentTarget.style.color = '#ffffff';
                 }
               }}
               onFocus={(e) => {
@@ -166,12 +173,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <Link
               to="/register"
               className="font-medium transition-colors"
-              style={{ color: '#21A691' }}
+              style={{ color: '#ffffff' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = '#87DF2C';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#21A691';
+                e.currentTarget.style.color = '#ffffff';
               }}
             >
               Don't have an account? Sign up

@@ -226,17 +226,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
               onClick={onNavigateToProfile}
               className="w-full flex items-center space-x-3 p-3 rounded-lg transition-colors"
               style={{ 
-                color: '#B4B4B2',
+                color: '#ffffff',
                 borderColor: '#21A691'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#21A691';
-                e.currentTarget.style.color = '#FFFFFF';
                 e.currentTarget.style.borderColor = '#87DF2C';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#B4B4B2';
                 e.currentTarget.style.borderColor = '#21A691';
               }}
             >
