@@ -19,4 +19,10 @@ google-auth-httplib2
 chromadb
 tiktoken
 
-# Add any additional dependencies here
+# Firebase dependencies
+firebase-admin
+pyrebase4
+
+# Additional dependencies
+email-validator
+passlib[bcrypt]
