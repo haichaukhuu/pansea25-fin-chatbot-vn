@@ -14,6 +14,9 @@ load_dotenv()
 from ai_models.model_factory import ModelFactory
 from ai_models.model_manager import ModelManager
 
+# Import Firebase authentication components
+from auth import auth_router, firebase_config
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,6 +36,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize Firebase on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Firebase and AI models on startup"""
+    try:
+        # Initialize Firebase Admin SDK
+        firebase_config.initialize_admin_sdk()
+        firebase_config.initialize_client_sdk()
+        logger.info("Firebase initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Firebase: {e}")
+
+# Include authentication router
+app.include_router(auth_router, prefix="/api")
 
 # Security
 security = HTTPBearer()
