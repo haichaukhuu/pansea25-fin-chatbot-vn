@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface FilesSidebarProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface FilesSidebarProps {
 
 export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) => {
   const { files } = useChat();
+  const { t, formatDate, formatTime } = useLanguage();
 
   // Group files by date
   const groupedFiles = files.reduce((groups, file) => {
@@ -29,9 +31,14 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
 
   const getDateLabel = (dateStr: string) => {
     const date = new Date(dateStr);
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
-    return format(date, 'MMM d, yyyy');
+    if (isToday(date)) return t('date.today') || 'Today';
+    if (isYesterday(date)) return t('date.yesterday') || 'Yesterday';
+    
+    // For non-recent dates, use appropriate format based on language
+    const longFormat = formatDate(date, 'long');
+    // Vietnamese: "Thứ Sáu, 15/08/2025" -> take part after first comma
+    // English: "Friday, August 15, 2025" -> take everything after first comma
+    return longFormat.split(', ').slice(1).join(', ');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -78,7 +85,7 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
           >
             <div className="flex items-center space-x-2">
               <FolderIcon className="h-5 w-5" style={{ color: '#FFFFFF' }} />
-              <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>Generated Files</h2>
+              <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>{t('sidebar.generated_files')}</h2>
             </div>
             <button
               onClick={onToggle}
@@ -150,7 +157,7 @@ export const FilesSidebar: React.FC<FilesSidebarProps> = ({ isOpen, onToggle }) 
                                   <div className="flex items-center space-x-2 text-xs" style={{ color: '#000000' }}>
                                     <span>{formatFileSize(file.size)}</span>
                                     <span>•</span>
-                                    <span>{format(file.createdAt, 'HH:mm')}</span>
+                                    <span>{formatTime(file.createdAt)}</span>
                                   </div>
                                 </div>
                               </div>

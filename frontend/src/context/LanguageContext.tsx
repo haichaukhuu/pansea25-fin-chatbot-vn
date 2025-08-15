@@ -32,12 +32,14 @@ const translations = {
     'register.title': 'Đăng ký',
     'language.vietnamese': 'Tiếng Việt',
     'language.english': 'English',
+    'sidebar.generated_files': 'Tệp đã tạo',
+    'sidebar.chat_history': 'Lịch sử trò chuyện',
     'profile.profile': 'Hồ sơ',
     'profile.account': 'Tài khoản',
     'profile.preferences': 'Tùy chọn',
     'profile.profile_info': 'Thông tin hồ sơ',
     'profile.full_name': 'Họ và tên',
-    'profile.email_address': 'Địa chỉ email',
+    'profile.email_address': 'Địa chỉ E-mail',
     'profile.change_avatar': 'Thay đổi ảnh đại diện',
     'profile.save_changes': 'Lưu thay đổi',
     'profile.change_password': 'Thay đổi mật khẩu',
@@ -46,7 +48,7 @@ const translations = {
     'profile.confirm_password': 'Xác nhận mật khẩu',
     'profile.update_password': 'Cập nhật mật khẩu',
     'profile.notifications': 'Thông báo',
-    'profile.email_notifications': 'Thông báo email',
+    'profile.email_notifications': 'Nhận thông báo qua E-mail',
     'profile.notifications_desc': 'Nhận cập nhật về chat và tài khoản của bạn',
     'profile.sign_out': 'Đăng xuất',
     'profile.save_preferences': 'Lưu tùy chọn',
@@ -56,6 +58,14 @@ const translations = {
     'profile.sign_up': 'Đăng ký',
     'profile.signing_in': 'Đang đăng nhập...',
     'profile.sign_in': 'Đăng nhập',
+    'profile.account_settings': 'Cài đặt tài khoản',
+    'profile.change_password_section': 'Thay đổi mật khẩu',
+    'profile.account_deletion': 'Xóa tài khoản',
+    'profile.delete_account': 'Xóa tài khoản',
+    'profile.delete_account_desc': 'Xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan.',
+    'profile.avatar_hint': 'JPG, GIF hoặc PNG. Kích thước tối đa 1MB.',
+    'date.today': 'Hôm nay',
+    'date.yesterday': 'Hôm qua'
   },
   en: {
     'welcome.title': 'Welcome to Financial Chatbot',
@@ -72,12 +82,14 @@ const translations = {
     'register.title': 'Register',
     'language.vietnamese': 'Tiếng Việt',
     'language.english': 'English',
+    'sidebar.generated_files': 'Generated Files',
+    'sidebar.chat_history': 'Chat History',
     'profile.profile': 'Profile',
     'profile.account': 'Account',
     'profile.preferences': 'Preferences',
     'profile.profile_info': 'Profile Information',
     'profile.full_name': 'Full Name',
-    'profile.email_address': 'Email Address',
+    'profile.email_address': 'E-mail Address',
     'profile.change_avatar': 'Change Avatar',
     'profile.save_changes': 'Save Changes',
     'profile.change_password': 'Change Password',
@@ -86,7 +98,7 @@ const translations = {
     'profile.confirm_password': 'Confirm Password',
     'profile.update_password': 'Update Password',
     'profile.notifications': 'Notifications',
-    'profile.email_notifications': 'Email Notifications',
+    'profile.email_notifications': 'E-mail Notifications',
     'profile.notifications_desc': 'Receive updates about your chats and account',
     'profile.sign_out': 'Sign Out',
     'profile.save_preferences': 'Save Preferences',
@@ -96,6 +108,14 @@ const translations = {
     'profile.sign_up': 'Sign up',
     'profile.signing_in': 'Signing in...',
     'profile.sign_in': 'Sign in',
+    'profile.account_settings': 'Account Settings',
+    'profile.change_password_section': 'Change Password',
+    'profile.account_deletion': 'Account Deletion',
+    'profile.delete_account': 'Delete Account',
+    'profile.delete_account_desc': 'Permanently delete your account and all associated data.',
+    'profile.avatar_hint': 'JPG, GIF or PNG. Max size 1MB.',
+    'date.today': 'Today',
+    'date.yesterday': 'Yesterday'
   }
 };
 
@@ -111,11 +131,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     
     switch (formatType) {
       case 'long':
-        return format(date, 'EEEE, dd/MM/yyyy', { locale });
+        return format(date, language === 'vi' ? 'EEEE, dd/MM/yyyy' : 'EEEE, MMMM d, yyyy', { locale });
       case 'relative':
         return formatDistanceToNow(date, { locale, addSuffix: true });
       default:
-        return format(date, 'dd/MM/yyyy', { locale });
+        return format(date, language === 'vi' ? 'dd/MM/yyyy' : 'MMMM d, yyyy', { locale });
     }
   };
 

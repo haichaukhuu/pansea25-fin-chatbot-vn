@@ -11,6 +11,7 @@ import {
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const { chats, currentChat, createNewChat, selectChat, searchChats, deleteChat } = useChat();
   const { user } = useAuth();
+  const { t, formatDate, formatTime } = useLanguage();
 
   const filteredChats = searchQuery.trim() ? searchChats(searchQuery) : chats;
 
@@ -41,9 +43,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const getDateLabel = (dateStr: string) => {
     const date = new Date(dateStr);
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
-    return format(date, 'MMM d, yyyy');
+    if (isToday(date)) return t('date.today') || 'Today';
+    if (isYesterday(date)) return t('date.yesterday') || 'Yesterday';
+    const longFormat = formatDate(date, 'long');
+    // Vietnamese: "Thứ Sáu, 15/08/2025" -> take part after first comma
+    // English: "Friday, August 15, 2025" -> take everything after first comma
+    return longFormat.split(', ').slice(1).join(', ');
   };
 
   const handleNewChat = () => {
@@ -80,7 +85,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         <div className="flex flex-col h-full">
           {/* Header (aligned with main and files headers) */}
           <div className="flex items-center justify-between h-16 px-4" style={{ backgroundColor: '#1a322e' }}>
-            <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>Chats</h2>
+            <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#FFFFFF' }}>{t('sidebar.chat_history')}</h2>
             <div className="flex items-center space-x-2">
               <button
                     onClick={handleNewChat}
@@ -200,7 +205,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                   }
                                 </p>
                                 <p className="text-xs opacity-50">
-                                  {format(chat.updatedAt, 'HH:mm')}
+                                  {formatTime(chat.updatedAt)}
                                 </p>
                               </div>
                               <button
