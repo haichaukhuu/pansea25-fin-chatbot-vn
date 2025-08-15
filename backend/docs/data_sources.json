@@ -1,0 +1,544 @@
+{
+    "banks": [
+        {
+            "website" : "vietcombank.com.vn",
+            "vietnamese_name" : "Ngân hàng Ngoại thương Việt Nam",
+            "english_name" : "Joint Stock Commercial Bank for Foreign Trade of Vietnam"
+        },
+        {
+            "website" : "agribank.com.vn",
+            "vietnamese_name" : "Ngân hàng Nông nghiệp và Phát triển Nông thôn Việt Nam",
+            "english_name" : "Vietnam Bank for Agriculture and Rural Development"
+        },
+        {
+            "website" : "bidv.com.vn",
+            "vietnamese_name" : "Ngân hàng Đầu tư và Phát triển Việt Nam",
+            "english_name" : "Joint Stock Commercial Bank for Investment and Development of Vietnam"
+        },
+        {
+            "website" : "mbbank.com.vn",
+            "vietnamese_name" : "Ngân hàng Quân đội",
+            "english_name" : "Military Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "techcombank.com.vn",
+            "vietnamese_name" : "Ngân hàng Kỹ thương Việt Nam",
+            "english_name" : "Vietnam Technological and Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "vpbank.com.vn",
+            "vietnamese_name" : "Ngân hàng Việt Nam Thịnh Vượng",
+            "english_name" : "Vietnam Prosperity Joint Stock Commercial Bank"
+        },
+        {
+            "website" : "vietinbank.vn",
+            "vietnamese_name" : "Ngân hàng Công thương Việt Nam",
+            "english_name" : "Vietnam Joint Stock Commercial Bank for Industry and Trade"
+        },
+        {
+            "website" : "acb.com.vn",
+            "vietnamese_name" : "Ngân hàng Á Châu",
+            "english_name" : "Asia Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "shb.com.vn",
+            "vietnamese_name" : "Ngân hàng Sài Gòn - Hà Nội",
+            "english_name" : "Saigon - Hanoi Commercial Joint Stock Bank"
+        },
+        {
+            "website":  "hdbank.com.vn",
+            "vietnamese_name" : "Ngân hàng Phát triển TP.HCM",
+            "english_name" : "Ho Chi Minh City Development Joint Stock Commercial Bank"
+        },
+        {
+            "website" : "sacombank.com.vn",
+            "vietnamese_name" : "Ngân hàng Sài Gòn Thương Tín",
+            "english_name" : "Saigon Thuong Tin Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "eximbank.com.vn",
+            "vietnamese_name" : "Ngân hàng Xuất Nhập Khẩu Việt Nam",
+            "english_name" : "Vietnam Export-Import Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "lpcbank.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại Cổ phần Lộc Phát Việt Nam",
+            "english_name" : "Loc Phat Vietnam Joint Stock Commercial Bank"
+        },
+        {
+            "website" : "vib.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại cổ phần Quốc tế Việt Nam",
+            "english_name" : "Vietnam International Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "seabank.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại Cổ phần Đông Nam Á",
+            "english_name" : "Southeast Asia Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "tpb.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại Cổ phần Tiên Phong",
+            "english_name" : "Tien Phong Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "msb.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại Cổ phần Hàng Hải Việt Nam",
+            "english_name" : "Maritime Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "ocb.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại Cổ phần Phương Đông",
+            "english_name" : "Orient Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "pvcombank.com.vn",
+            "vietnamese_name" : "Ngân hàng TMCP Đại Chúng Việt Nam",    
+            "english_name" : "Vietnam Public Joint Stock Commercial Bank"
+        },
+        {
+            "website" : "scb.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại cổ phần Sài Gòn",
+            "english_name" : "Sai Gon Commercial Joint Stock Bank"
+        },
+        {
+            "website" : "namba.com.vn",
+            "vietnamese_name" : "Ngân hàng Thương mại Cổ phần Nam Á",
+            "english_name" : "Nam A Commercial Joint Stock Bank"
+        }
+
+
+    ],
+
+
+    "government": [
+        {
+            "website": "quochoi.vn",
+            "vietnamese_name": "Quốc hội Việt Nam",
+            "english_name": "National Assembly of Vietnam"
+        },
+        {
+            "website": "dangcongsan.vn",
+            "vietnamese_name": "Đảng Cộng sản Việt Nam",
+            "english_name": "Communist Party of Vietnam"
+        },
+        {
+            "website": "chinhphu.vn",
+            "vietnamese_name": "Chính phủ",
+            "english_name": "Government of the Socialist Republic of Vietnam"
+        },
+        {
+            "website": "mod.gov.vn",
+            "vietnamese_name": "Bộ Quốc phòng",
+            "english_name": "Ministry of National Defense"
+        },
+        {
+            "website": "mps.gov.vn",
+            "vietnamese_name": "Bộ Công An",
+            "english_name": "Ministry of Public Security"
+        },
+        {
+            "website": "moha.gov.vn",
+            "vietnamese_name": "Bộ Nội vụ",
+            "english_name": "Ministry of Home Affairs"
+        },
+        {
+            "website": "vpcp.chinhphu.vn",
+            "vietnamese_name": "Văn Phòng Chính phủ",
+            "english_name": "Office of the Government"
+        },
+        {
+            "website": "most.gov.vn",
+            "vietnamese_name": "Bộ Khoa học và Công nghệ",
+            "english_name": "Ministry of Science and Technology"
+        },
+        {
+            "website": "mt.gov.vn",
+            "vietnamese_name": "Bộ Giao thông vận tải",
+            "english_name": "Ministry of Transport"
+        },
+        {
+            "website": "mpi.gov.vn",
+            "vietnamese_name": "Bộ Kế hoạch và Đầu tư",
+            "english_name": "Ministry of Planning and Investment"
+        },
+        {
+            "website": "mic.gov.vn",
+            "vietnamese_name": "Bộ Thông tin và Truyền thông",
+            "english_name": "Ministry of Information and Communications"
+        },
+        {
+            "website": "moit.gov.vn",
+            "vietnamese_name": "Bộ Công Thương",
+            "english_name": "Ministry of Industry and Trade"
+        },
+        {
+            "website": "mofa.gov.vn",
+            "vietnamese_name": "Bộ Ngoại giao",
+            "english_name": "Ministry of Foreign Affairs"
+        },
+        {
+            "website": "mard.gov.vn",
+            "vietnamese_name": "Bộ Nông nghiệp và Phát triển Nông thôn",
+            "english_name": "Ministry of Agriculture and Rural Development"
+        },
+        {
+            "website": "mof.gov.vn",
+            "vietnamese_name": "Bộ Tài chính",
+            "english_name": "Ministry of Finance"
+        },
+        {
+            "website": "xaydung.gov.vn",
+            "vietnamese_name": "Bộ Xây dựng",
+            "english_name": "Ministry of Construction"
+        },
+        {
+            "website": "moh.gov.vn",
+            "vietnamese_name": "Bộ Y tế",
+            "english_name": "Ministry of Health"
+        },
+        {
+            "website": "moet.gov.vn",
+            "vietnamese_name": "Bộ Giáo dục và Đào tạo",
+            "english_name": "Ministry of Education and Training"
+        },
+        {
+            "website": "monre.gov.vn",
+            "vietnamese_name": "Bộ Tài nguyên và Môi trường",
+            "english_name": "Ministry of Natural Resources and Environment"
+        },
+        {
+            "website": "bvhttdl.gov.vn",
+            "vietnamese_name": "Bộ Văn hóa Thể thao và Du lịch",
+            "english_name": "Ministry of Culture, Sports and Tourism"
+        },
+        {
+            "website": "moj.gov.vn",
+            "vietnamese_name": "Bộ Tư pháp",
+            "english_name": "Ministry of Justice"
+        },
+        {
+            "website": "molisa.gov.vn",
+            "vietnamese_name": "Bộ Lao động - Thương binh và Xã hội",
+            "english_name": "Ministry of Labour, Invalids and Social Affairs"
+        },
+        {
+            "website": "sbv.gov.vn",
+            "vietnamese_name": "Ngân hàng nhà nước Việt Nam",
+            "english_name": "State Bank of Vietnam"
+        },
+        {
+            "website": "cema.gov.vn",
+            "vietnamese_name": "Ủy ban Dân tộc",
+            "english_name": "Committee for Ethnic Minority Affairs"
+        },
+        {
+            "website": "thanhtra.gov.vn",
+            "vietnamese_name": "Thanh tra Chính phủ",
+            "english_name": "Government Inspectorate"
+        },
+        {
+            "website": "hanoi.gov.vn",
+            "vietnamese_name": "TP Hà Nội",
+            "english_name": "Hanoi City"
+        },
+        {
+            "website": "hochiminhcity.gov.vn",
+            "vietnamese_name": "TP Hồ Chí Minh",
+            "english_name": "Ho Chi Minh City"
+        },
+        {
+            "website": "danang.gov.vn",
+            "vietnamese_name": "TP Đà Nẵng",
+            "english_name": "Da Nang City"
+        },
+        {
+            "website": "haiphong.gov.vn",
+            "vietnamese_name": "TP Hải Phòng",
+            "english_name": "Hai Phong City"
+        },
+        {
+            "website": "cantho.gov.vn",
+            "vietnamese_name": "TP Cần Thơ",
+            "english_name": "Can Tho City"
+        },
+
+
+        
+        {
+            "website": "noibo.mic.gov.vn",
+            "vietnamese_name": "Thông tin nội bộ",
+            "english_name": "Internal Information - MIC"
+        },
+        {
+            "website": "vanphong.mic.gov.vn",
+            "vietnamese_name": "Văn phòng Bộ Thông tin và Truyền thông",
+            "english_name": "Office of Ministry of Information and Communications"
+        },
+        {
+            "website": "rfd.gov.vn",
+            "vietnamese_name": "Cục Tần số vô tuyến điện",
+            "english_name": "Authority of Radio Frequency Management"
+        },
+        {
+            "website": "aita.gov.vn",
+            "vietnamese_name": "Cục Tin học hóa",
+            "english_name": "Authority of Information Technology Application"
+        },
+        {
+            "website": "vnta.gov.vn",
+            "vietnamese_name": "Cục Viễn thông",
+            "english_name": "Telecommunications Authority"
+        },
+        {
+            "website": "vietnam.vn",
+            "vietnamese_name": "Cục Thông tin đối ngoại",
+            "english_name": "Authority of Foreign Information Service"
+        },
+        {
+            "website": "vtf.vn",
+            "vietnamese_name": "Quỹ Dịch vụ viễn thông công ích Việt Nam",
+            "english_name": "Vietnam Public Utility Telecommunication Service Fund"
+        },
+        {
+            "website": "vnnic.vn",
+            "vietnamese_name": "Trung tâm Internet Việt Nam",
+            "english_name": "Vietnam Internet Network Information Center"
+        },
+        {
+            "website": "vncert.gov.vn",
+            "vietnamese_name": "Trung tâm Ứng cứu khẩn cấp máy tính Việt Nam",
+            "english_name": "Vietnam Computer Emergency Response Team"
+        },
+        {
+            "website": "nxbthongtintruyenthong.vn",
+            "vietnamese_name": "Nhà xuất bản Thông tin và Truyền thông",
+            "english_name": "Information and Communications Publishing House"
+        },
+        {
+            "website": "cdcnin.edu.vn",
+            "vietnamese_name": "Trường cao đẳng công nghiệp in",
+            "english_name": "Printing Industry College"
+        },
+        {
+            "website": "ics.edu.vn",
+            "vietnamese_name": "Trường Đào tạo, bồi dưỡng cán bộ quản lý Thông tin và Truyền thông",
+            "english_name": "Training School for Information and Communication Managers"
+        },
+        {
+            "website": "viethanit.edu.vn",
+            "vietnamese_name": "Trường Cao đẳng CNTT hữu nghị Việt - Hàn",
+            "english_name": "Vietnam-Korea Friendship Information Technology College"
+        },
+        {
+            "website": "niics.gov.vn",
+            "vietnamese_name": "Viện Chiến lược TT&TT",
+            "english_name": "Institute of Strategy for Information and Communications"
+        },
+        {
+            "website": "ictnews.vn",
+            "vietnamese_name": "Báo Bưu điện Việt Nam",
+            "english_name": "Vietnam Post Newspaper"
+        },
+        {
+            "website": "vietnamnet.vn",
+            "vietnamese_name": "Báo điện tử VietNamNet",
+            "english_name": "VietNamNet Online Newspaper"
+        },
+        {
+            "website": "e-info.vn",
+            "vietnamese_name": "Báo điện tử EINFO",
+            "english_name": "EINFO Online Newspaper"
+        },
+        {
+            "website": "tapchibcvt.gov.vn",
+            "vietnamese_name": "Tạp chí CNTT&TT",
+            "english_name": "ICT Magazine"
+        },
+
+
+    
+        {
+            "website": "vnpost.vn",
+            "vietnamese_name": "Tổng công ty Bưu điện Việt Nam",
+            "english_name": "Vietnam Post Corporation"
+        },
+        {
+            "website": "vtc.org.vn",
+            "vietnamese_name": "Tổng công ty Truyền thông đa phương tiện Việt Nam (VTC)",
+            "english_name": "Vietnam Multimedia Corporation (VTC)"
+        },
+        {
+            "website": "mobifone.vn",
+            "vietnamese_name": "Tổng Công ty Mobifone",
+            "english_name": "Mobifone Corporation"
+        },
+
+        {
+            "website": "vnpt.vn",
+            "vietnamese_name": "Tập đoàn Bưu chính Viễn thông Việt Nam",
+            "english_name": "Vietnam Posts and Telecommunications Group (VNPT)"
+        },
+        {
+            "website": "viettel.com.vn",
+            "vietnamese_name": "Tập đoàn Viễn thông quân đội",
+            "english_name": "Viettel Group"
+        },
+        {
+            "website": "fpt.com.vn",
+            "vietnamese_name": "Công ty cổ phần FPT",
+            "english_name": "FPT Corporation"
+        },
+        {
+            "website": "vinaphone.com.vn",
+            "vietnamese_name": "VNPT-Vinaphone",
+            "english_name": "VNPT Vinaphone"
+        },
+
+
+
+        {
+            "website": "congdoanvn.org.vn",
+            "vietnamese_name": "Tổng liên đoàn Lao động Việt Nam",
+            "english_name": "Vietnam General Confederation of Labour"
+        },
+        {
+            "website": "ictpress.vn",
+            "vietnamese_name": "Liên chi hội Nhà báo Thông tin và Truyền thông",
+            "english_name": "Information and Communications Journalists’ Association"
+        },
+        {
+            "website": "taisancong.vn",
+            "vietnamese_name": "Trang Thông tin về tài sản nhà nước - Cục Quản lý Công sản – BTC",
+            "english_name": "Public Asset Information Portal – Department of Public Asset Management – Ministry of Finance"
+        },
+        {
+            "website": "frt.mic.gov.vn",
+            "vietnamese_name": "Giới thiệu các Sở Thông tin và Truyền thông",
+            "english_name": "Introduction to Departments of Information and Communications"
+        },
+        {
+            "website": "gso.gov.vn",
+            "vietnamese_name": "Tổng điều tra Nông thôn, nông nghiệp và thủy sản năm 2016",
+            "english_name": "2016 National Rural, Agricultural and Fishery Census"
+        },
+        {
+            "website": "giamngheo.mic.gov.vn",
+            "vietnamese_name": "Cổng Thông tin giảm nghèo",
+            "english_name": "National Poverty Reduction Portal"
+        }
+    ],
+
+
+    "financial_news": [
+        {
+            "vietnamese_name": "Báo Công Thương",
+            "english_name": "Industry and Trade Newspaper",
+            "website": "http://congthuong.vn"
+        },
+        {
+            "vietnamese_name": "Báo Doanh nhân Sài Gòn",
+            "english_name": "Saigon Entrepreneur Newspaper",
+            "website": "https://doanhnhansaigon.vn"
+        },
+        {
+            "vietnamese_name": "Báo Đầu tư",
+            "english_name": "Investment Newspaper",
+            "website": "https://baodautu.vn"
+        },
+        {
+            "vietnamese_name": "Báo Kinh tế và Đô thị",
+            "english_name": "Economic and Urban Newspaper",
+            "website": "https://kinhtedothi.vn"
+        },
+        {
+            "vietnamese_name": "Báo Thời báo Kinh doanh",
+            "english_name": "Business Times Newspaper",
+            "website": "http://thoi‑bao‑kinh‑doanh.vn/"
+        },
+        {
+            "vietnamese_name": "Báo Thời báo Ngân hàng",
+            "english_name": "Banking Times Newspaper",
+            "website": "https://thoibaonganhang.vn"
+        },
+        {
+            "vietnamese_name": "Báo Thời báo Tài chính Việt Nam",
+            "english_name": "Vietnam Finance Times Newspaper",
+            "website": "http://thoibaotaichinhvietnam.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Chứng khoán",
+            "english_name": "Securities Magazine",
+            "website": "http://tapchichungkuan.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Diễn đàn doanh nghiệp",
+            "english_name": "Vietnam Business Forum Magazine",
+            "website": "http://diendandoanhnghiep.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Kinh tế và Dự báo",
+            "english_name": "Economic and Forecasting Magazine",
+            "website": "http://kinhtevadubao.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Ngân hàng",
+            "english_name": "Banking Review Magazine",
+            "website": "https://tapchinganhang.gov.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Tài chính",
+            "english_name": "Finance Magazine",
+            "website": "https://tapchitaichinh.vn"
+        },
+        {
+            "vietnamese_name": "Báo Nông nghiệp Việt Nam",
+            "english_name": "Vietnam Agriculture Newspaper",
+            "website": "https://nongnghiep.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Thủy sản Việt Nam",
+            "english_name": "Vietnam Fisheries Magazine",
+            "website": "https://thuysanvietnam.com.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Kinh tế nông thôn",
+            "english_name": "Rural Economy Magazine",
+            "website": "https://kinhtenongthon.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Nông thôn Việt",
+            "english_name": "Vietnam Rural Magazine",
+            "website": "https://nongthonviet.com.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Nông nghiệp và Phát triển nông thôn",
+            "english_name": "Agriculture and Rural Development Magazine",
+            "website": "https://tapchinganhang.gov.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Nông thôn mới",
+            "english_name": "New Rural Magazine",
+            "website": "http://nongthonmoivanhoa.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Thế giới Gia cầm",
+            "english_name": "Poultry World Magazine",
+            "website": "http://thegioigiacam.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Kinh tế Việt Nam (VnEconomy)",
+            "english_name": "Vietnam Economic Times",
+            "website": "https://vneconomy.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Kinh tế và Phát triển",
+            "english_name": "Economics and Development Journal",
+            "website": "https://js.ktpt.edu.vn"
+        },
+        {
+            "vietnamese_name": "Tạp chí Quản lý và Kinh tế Quốc tế",
+            "english_name": "International Economics and Management Journal",
+            "website": "https://tapchi.ftu.edu.vn"
+        }
+    ]
+} 

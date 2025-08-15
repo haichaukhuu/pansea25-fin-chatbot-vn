@@ -1,0 +1,22 @@
+pydantic
+fastapi
+transformers
+requests
+python-dotenv
+httpx
+torch
+sentence-transformers
+numpy
+uvicorn
+# langchain
+# langchain-community
+google-genai
+python-jose[cryptography] 
+python-multipart 
+google-auth 
+google-auth-oauthlib 
+google-auth-httplib2
+chromadb
+tiktoken
+
+# Add any additional dependencies here
