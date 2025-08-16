@@ -78,6 +78,7 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
   const { formatTime } = useLanguage();
+  // Streaming state no longer needed for typing indicator; we rely on message content updates.
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
