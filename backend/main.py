@@ -46,7 +46,6 @@ async def startup_event():
     try:
         # Initialize Firebase Admin SDK
         firebase_config.initialize_admin_sdk()
-        firebase_config.initialize_client_sdk()
         logger.info("Firebase initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Firebase: {e}")
