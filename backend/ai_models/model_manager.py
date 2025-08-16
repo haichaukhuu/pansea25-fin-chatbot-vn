@@ -40,8 +40,8 @@ class ModelManager:
                 logger.error("No GOOGLE_GENAI_API_KEY found in environment")
                 return
             
-            # Create Gemma model with hardcoded config
-            config = ModelConfig(
+            # Create Gemma 3 model (primary)
+            gemma_3_config = ModelConfig(
                 name="Gemma 3 27B IT",
                 model_id="gemma-3-27b-it",
                 temperature=0.7,
@@ -51,9 +51,24 @@ class ModelManager:
                 priority=1
             )
             
-            gemma_model = GoogleGenAIModel(config, api_key)
-            self.add_model("gemma", gemma_model, "llm")
-            logger.info("Initialized Gemma model successfully")
+            gemma_3_model = GoogleGenAIModel(gemma_3_config, api_key)
+            self.add_model("gemma_3", gemma_3_model, "llm")
+            logger.info("Initialized Gemma 3 model successfully")
+            
+            # Create Gemini model (fallback)
+            gemini_pro_config = ModelConfig(
+                name="Gemini 2.5 Flash",
+                model_id="gemini-2.5-flash",
+                temperature=0.6,
+                max_tokens=8192,
+                is_primary=False,
+                capabilities=[ModelCapability.CHAT, ModelCapability.TEXT_GENERATION],
+                priority=2
+            )
+            
+            gemini_pro_model = GoogleGenAIModel(gemini_pro_config, api_key)
+            self.add_model("gemini_pro", gemini_pro_model, "llm")
+            logger.info("Initialized Gemini Pro model successfully")
             
         except Exception as e:
             logger.error(f"Failed to initialize default models: {e}")
@@ -161,13 +176,14 @@ class ModelManager:
         model_type: str = "llm",
         preferred_model: str = None
     ) -> AsyncIterator[str]:
-        """Generate streaming response using the best available model"""
+        """Generate enhanced streaming response with model-specific optimizations"""
         
         # Try preferred model first if specified
         if preferred_model and preferred_model in self.models:
             model = self.models[preferred_model]
             if model.is_available and self.model_types.get(preferred_model) == model_type:
                 try:
+                    logger.info(f"Using preferred model {preferred_model} for streaming")
                     async for chunk in model.generate_streaming_response(prompt, context, system_prompt):
                         yield chunk
                     return
@@ -184,24 +200,54 @@ class ModelManager:
         if not available_models:
             raise RuntimeError(f"No available {model_type} models")
         
-        # Sort by priority
-        available_models.sort(key=lambda m: getattr(m.config, 'priority', 999))
+        # Sort by priority, but prefer models with better streaming capabilities
+        available_models.sort(key=lambda m: (
+            getattr(m.config, 'priority', 999),
+            0 if hasattr(m, 'get_streaming_capabilities') else 1
+        ))
         
         # Try models in order of priority
         last_error = None
         for model in available_models:
             try:
+                model_name = model.config.name
+                model_type_info = getattr(model, 'model_type', 'unknown')
+                logger.info(f"Starting streaming with {model_name} (type: {model_type_info})")
+                
+                # Log streaming capabilities if available
+                if hasattr(model, 'get_streaming_capabilities'):
+                    capabilities = model.get_streaming_capabilities()
+                    logger.info(f"Streaming capabilities: {capabilities}")
+                
                 async for chunk in model.generate_streaming_response(prompt, context, system_prompt):
                     yield chunk
-                logger.info(f"Generated streaming response using {model.config.name}")
+                
+                logger.info(f"Successfully completed streaming response using {model_name}")
                 return
+                
             except Exception as e:
-                logger.warning(f"Model {model.config.name} failed: {e}")
+                logger.warning(f"Model {model.config.name} failed during streaming: {e}")
                 model.mark_error()
                 last_error = e
         
         # All models failed
-        raise RuntimeError(f"All {model_type} models failed. Last error: {last_error}")
+        raise RuntimeError(f"All {model_type} models failed during streaming. Last error: {last_error}")
+    
+    def get_streaming_capabilities(self) -> Dict[str, Any]:
+        """Get streaming capabilities summary for all models"""
+        capabilities = {}
+        
+        for name, model in self.models.items():
+            if hasattr(model, 'get_streaming_capabilities'):
+                capabilities[name] = model.get_streaming_capabilities()
+            else:
+                capabilities[name] = {
+                    "supports_streaming": True,
+                    "model_type": "unknown",
+                    "streaming_method": "basic"
+                }
+        
+        return capabilities
     
     async def generate_embedding(
         self,
