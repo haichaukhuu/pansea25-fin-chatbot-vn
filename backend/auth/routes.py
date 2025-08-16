@@ -7,7 +7,7 @@ from .models import (
     UserRegisterRequest, UserLoginRequest, RefreshTokenRequest,
     PasswordResetRequest, UpdateUserRequest, SetCustomClaimsRequest,
     AuthResponse, UserResponse, TokenResponse, MessageResponse,
-    TokenVerificationResponse, ErrorResponse
+    TokenVerificationResponse, ErrorResponse, PasswordResetResponse
 )
 from .firebase_auth_service import firebase_auth_service
 from .dependencies import get_current_user, require_admin, require_verified_email
@@ -28,10 +28,11 @@ auth_router = APIRouter(
 
 security = HTTPBearer()
 
-@auth_router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@auth_router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegisterRequest):
     """
     Register a new user with email and password
+    Returns user info with custom token for immediate authentication
     """
     try:
         user_info = await firebase_auth_service.register_user(
@@ -39,7 +40,7 @@ async def register(user_data: UserRegisterRequest):
             password=user_data.password,
             display_name=user_data.display_name
         )
-        return UserResponse(**user_info)
+        return AuthResponse(**user_info)
     except HTTPException:
         raise
     except Exception as e:
@@ -53,6 +54,8 @@ async def register(user_data: UserRegisterRequest):
 async def login(user_data: UserLoginRequest):
     """
     Login user with email and password
+    Note: This implementation uses custom tokens. 
+    In production, you should implement proper password validation.
     """
     try:
         auth_info = await firebase_auth_service.login_user(
@@ -72,10 +75,10 @@ async def login(user_data: UserLoginRequest):
 @auth_router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(token_data: RefreshTokenRequest):
     """
-    Refresh user's access token
+    Generate a new custom token for the user
     """
     try:
-        token_info = await firebase_auth_service.refresh_token(token_data.refresh_token)
+        token_info = await firebase_auth_service.refresh_token(token_data.uid)
         return TokenResponse(**token_info)
     except HTTPException:
         raise
@@ -103,21 +106,22 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             detail="Token verification failed"
         )
 
-@auth_router.post("/password-reset", response_model=MessageResponse)
+@auth_router.post("/password-reset", response_model=PasswordResetResponse)
 async def send_password_reset(reset_data: PasswordResetRequest):
     """
-    Send password reset email to user
+    Generate password reset link for user
+    Note: In production, this link should be sent via email service
     """
     try:
         result = await firebase_auth_service.send_password_reset_email(reset_data.email)
-        return MessageResponse(**result)
+        return PasswordResetResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Password reset error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send password reset email"
+            detail="Failed to generate password reset link"
         )
 
 @auth_router.get("/me", response_model=UserResponse)

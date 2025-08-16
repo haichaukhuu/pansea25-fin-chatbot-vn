@@ -19,7 +19,7 @@ class UserLoginRequest(BaseModel):
     password: str
 
 class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+    uid: str  # Changed from refresh_token to uid since we're using custom tokens
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -51,15 +51,18 @@ class AuthResponse(BaseModel):
     email: Optional[str]
     display_name: Optional[str]
     email_verified: bool
-    id_token: str
-    refresh_token: str
-    expires_in: str
+    custom_token: str
+    message: Optional[str] = None
 
 class TokenResponse(BaseModel):
-    id_token: str
-    refresh_token: str
-    expires_in: str
+    custom_token: str
     uid: str
+    message: Optional[str] = None
+
+class PasswordResetResponse(BaseModel):
+    message: str
+    reset_link: str
+    note: Optional[str] = None
 
 class MessageResponse(BaseModel):
     message: str
