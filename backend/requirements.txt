@@ -33,7 +33,6 @@ numpy
 
 # Firebase dependencies
 firebase-admin
-pyrebase4
 
 # Additional dependencies
 email-validator
