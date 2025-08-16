@@ -16,8 +16,20 @@ python-multipart
 google-auth 
 google-auth-oauthlib 
 google-auth-httplib2
-chromadb
 tiktoken
+
+# RAG dependencies
+chromadb
+crawl4ai
+faiss-cpu
+beautifulsoup4
+selenium
+duckduckgo-search
+apscheduler
+sentence-transformers
+numpy
+
+
 
 # Firebase dependencies
 firebase-admin
