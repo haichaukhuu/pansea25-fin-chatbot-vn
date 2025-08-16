@@ -6,6 +6,8 @@ import logging
 from fastapi import HTTPException
 import secrets
 import string
+import httpx
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -59,52 +61,61 @@ class FirebaseAuthService:
                 raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
     
     async def login_user(self, email: str, password: str) -> Dict[str, Any]:
-        """Login user with email and password using custom token approach
-        
-        IMPORTANT: This implementation has limitations since Firebase Admin SDK 
-        cannot validate passwords directly. In production, you should either:
-        1. Use Firebase Client SDK in a secure server environment
-        2. Implement your own password hashing/validation
-        3. Use Firebase Auth REST API for password validation
-        
-        Current implementation only validates user existence and creates custom tokens.
-        """
+        """Login user with email and password using Firebase Auth REST API"""
         if not self.admin_auth:
             raise HTTPException(status_code=503, detail="Firebase authentication service not available")
         
         try:
-            # Get user by email to validate existence
+            # Get Firebase API key from environment
+            api_key = os.getenv("FIREBASE_API_KEY")
+            if not api_key:
+                raise HTTPException(status_code=500, detail="Firebase API key not configured")
+            
+            # Use Firebase Auth REST API to validate credentials
+            auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(auth_url, json={
+                    "email": email,
+                    "password": password,
+                    "returnSecureToken": True
+                })
+            
+            if response.status_code != 200:
+                auth_error = response.json()
+                error_message = auth_error.get("error", {}).get("message", "Authentication failed")
+                
+                if "INVALID_PASSWORD" in error_message:
+                    raise HTTPException(status_code=401, detail="Invalid password")
+                elif "EMAIL_NOT_FOUND" in error_message:
+                    raise HTTPException(status_code=404, detail="User not found")
+                elif "USER_DISABLED" in error_message:
+                    raise HTTPException(status_code=403, detail="User account is disabled")
+                elif "TOO_MANY_ATTEMPTS_TRY_LATER" in error_message:
+                    raise HTTPException(status_code=429, detail="Too many failed attempts. Try again later")
+                else:
+                    raise HTTPException(status_code=401, detail="Authentication failed")
+            
+            auth_data = response.json()
+            
+            # Get additional user record from Admin SDK for complete info
             user_record = self.admin_auth.get_user_by_email(email)
-            
-            # TODO: Implement proper password validation here
-            # This could be done by:
-            # 1. Using Firebase Auth REST API to validate credentials
-            # 2. Storing and validating password hashes separately
-            # 3. Using a different authentication service
-            
-            # For now, we assume the password is valid if the user exists
-            # This is NOT secure and should be implemented properly in production
-            
-            # Create custom token for authentication
-            custom_token = self.admin_auth.create_custom_token(user_record.uid)
             
             return {
                 "uid": user_record.uid,
                 "email": user_record.email,
                 "display_name": user_record.display_name,
                 "email_verified": user_record.email_verified,
-                "custom_token": custom_token.decode('utf-8') if isinstance(custom_token, bytes) else custom_token,
-                "message": "Login successful. Note: Password validation not implemented in this version."
+                "id_token": auth_data["idToken"],
+                "refresh_token": auth_data["refreshToken"],
+                "expires_in": auth_data["expiresIn"]
             }
             
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Login error: {e}")
-            if "USER_NOT_FOUND" in str(e):
-                raise HTTPException(status_code=404, detail="User not found")
-            elif "USER_DISABLED" in str(e):
-                raise HTTPException(status_code=403, detail="User account is disabled")
-            else:
-                raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+            raise HTTPException(status_code=500, detail="Login failed")
     
     async def verify_id_token(self, id_token: str) -> Dict[str, Any]:
         """Verify Firebase ID token"""

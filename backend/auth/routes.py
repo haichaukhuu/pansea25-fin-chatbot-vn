@@ -6,7 +6,7 @@ import logging
 from .models import (
     UserRegisterRequest, UserLoginRequest, RefreshTokenRequest,
     PasswordResetRequest, UpdateUserRequest, SetCustomClaimsRequest,
-    AuthResponse, UserResponse, TokenResponse, MessageResponse,
+    AuthResponse, LoginResponse, UserResponse, TokenResponse, MessageResponse,
     TokenVerificationResponse, ErrorResponse, PasswordResetResponse
 )
 from .firebase_auth_service import firebase_auth_service
@@ -50,19 +50,18 @@ async def register(user_data: UserRegisterRequest):
             detail="Registration failed"
         )
 
-@auth_router.post("/login", response_model=AuthResponse)
+@auth_router.post("/login", response_model=LoginResponse)
 async def login(user_data: UserLoginRequest):
     """
-    Login user with email and password
-    Note: This implementation uses custom tokens. 
-    In production, you should implement proper password validation.
+    Login user with email and password using Firebase Auth REST API
+    Returns Firebase ID token, refresh token, and user information
     """
     try:
         auth_info = await firebase_auth_service.login_user(
             email=user_data.email,
             password=user_data.password
         )
-        return AuthResponse(**auth_info)
+        return LoginResponse(**auth_info)
     except HTTPException:
         raise
     except Exception as e:
