@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { TypingIndicator } from '../common/TypingIndicator';
 import type { Message } from '../../types';
 
 interface MessageListProps {
@@ -8,8 +9,14 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
-  const { currentChat } = useChat();
+  const { currentChat, isStreaming } = useChat();
   const { t } = useLanguage();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentChat?.messages, isStreaming]);
 
   if (!currentChat) {
     return (
@@ -67,6 +74,10 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
       {currentChat.messages.map((message) => (
         <MessageBubble key={message.id} message={message} />
       ))}
+      {isStreaming && (
+        <TypingIndicator />
+      )}
+      <div ref={messagesEndRef} />
     </div>
   );
 };
@@ -78,7 +89,11 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
   const { formatTime } = useLanguage();
-  // Streaming state no longer needed for typing indicator; we rely on message content updates.
+  
+  // Add cursor effect for streaming messages
+  const displayContent = message.isStreaming 
+    ? message.content + '|' 
+    : message.content;
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -105,10 +120,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             border: isUser ? 'none' : '2px solid #B4B4B2'
           }}
         >
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {displayContent}
+            {message.isStreaming && (
+              <span className="animate-pulse">|</span>
+            )}
+          </p>
         </div>
         <div className={`mt-1 text-xs ${isUser ? 'text-right' : 'text-left'}`} style={{ color: '#B4B4B2' }}>
           {formatTime(message.timestamp)}
+          {message.isStreaming && (
+            <span className="ml-2 text-xs" style={{ color: '#21A691' }}>Đang nhập...</span>
+          )}
         </div>
       </div>
     </div>

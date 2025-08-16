@@ -7,14 +7,33 @@ load_dotenv()
 
 # Model configurations
 MODEL_CONFIGS = {
-    "gemma": {
-        "name": "Gemma 3 27B IT",
-        "model_id": "gemma-3-27b-it",
+    "gemini_flash": {
+        "name": "Gemini 2.5 Flash",
+        "model_id": "gemini-2.5-flash",
         "temperature": 0.7,
         "max_tokens": 4096,
         "is_primary": True,
-        "capabilities": ["chat", "text_generation"],
-        "provider": "google_genai"
+        "capabilities": ["chat", "text_generation", "streaming", "multimodal"],
+        "provider": "google_genai",
+        "model_type": "gemini",
+        "streaming_config": {
+            "chunk_size": "medium",
+            "optimization": "native_streaming"
+        }
+    },
+    "gemini_pro": {
+        "name": "Gemini 2.5 Pro",
+        "model_id": "gemini-2.5-pro",
+        "temperature": 0.6,
+        "max_tokens": 8192,
+        "is_primary": False,
+        "capabilities": ["chat", "text_generation", "streaming", "multimodal", "reasoning"],
+        "provider": "google_genai",
+        "model_type": "gemini",
+        "streaming_config": {
+            "chunk_size": "large",
+            "optimization": "native_streaming"
+        }
     }
 }
 
@@ -33,11 +52,17 @@ API_CONFIG = {
 
 # AI Model Configuration
 AI_CONFIG = {
-    "default_model": "gemma",
+    "default_model": "gemini_flash",
     "api_key": os.getenv("GOOGLE_GENAI_API_KEY"),
-    "fallback_models": [],
+    "fallback_models": ["gemini_pro"],
     "max_retries": 3,
-    "timeout": 30
+    "timeout": 60,
+    "streaming_config": {
+        "enable_adaptive_streaming": True,
+        "buffer_size": 1024,
+        "chunk_timeout": 5.0,
+        "enable_compression": True
+    }
 }
 
 # Logging Configuration

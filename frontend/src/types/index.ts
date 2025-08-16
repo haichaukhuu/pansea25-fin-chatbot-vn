@@ -11,6 +11,8 @@ export interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   chatId: string;
+  isStreaming?: boolean; // True when message is being streamed
+  isComplete?: boolean; // True when streaming is complete
 }
 
 export interface Chat {

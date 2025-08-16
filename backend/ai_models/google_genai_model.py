@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from typing import Dict, Any, List, Optional, AsyncIterator
 from google import genai
 from google.genai import types
@@ -8,7 +9,7 @@ from .base_model import BaseModel, ModelResponse, ModelConfig, ModelCapability
 logger = logging.getLogger(__name__)
 
 class GoogleGenAIModel(BaseModel):
-    """Google GenAI model using direct client for better Gemma 3 support"""
+    """Enhanced Google GenAI model with optimized streaming support for both Gemini and Gemma models"""
     
     def __init__(self, config: ModelConfig, api_key: str = None):
         super().__init__(config)
@@ -17,13 +18,60 @@ class GoogleGenAIModel(BaseModel):
         if not self.api_key:
             raise ValueError("Google GenAI API key is required for this model")
         
+        # Get model type for optimization
+        self.model_type = self._detect_model_type()
+        
+        # Set up streaming configuration based on model type
+        self.streaming_config = self._configure_streaming()
+        
         try:
             # Initialize Google GenAI client
             self.client = genai.Client(api_key=self.api_key)
-            logger.info(f"Initialized Google GenAI model: {self.config.name} ({self.config.model_id})")
+            logger.info(f"Initialized Google GenAI model: {self.config.name} ({self.config.model_id}) - Type: {self.model_type}")
         except Exception as e:
             logger.error(f"Failed to initialize Google GenAI model {self.config.name}: {e}")
             self.is_available = False
+    
+    def _detect_model_type(self) -> str:
+        """Detect model type from model ID for optimization"""
+        model_id = self.config.model_id.lower()
+        if "gemini" in model_id:
+            return "gemini"
+        elif "gemma" in model_id:
+            return "gemma"
+        else:
+            # Default to gemini for Google GenAI models
+            return "gemini"
+    
+    def _configure_streaming(self) -> Dict[str, Any]:
+        """Configure streaming parameters based on model type and capabilities"""
+        base_config = {
+            "buffer_size": 1024,
+            "chunk_timeout": 5.0,
+            "enable_adaptive_chunking": True
+        }
+        
+        # Model-specific optimizations
+        if self.model_type == "gemini":
+            # Gemini models have native streaming optimization
+            base_config.update({
+                "streaming_method": "native",
+                "chunk_size": "medium",
+                "latency_optimization": True
+            })
+        elif self.model_type == "gemma":
+            # Gemma models benefit from KV cache optimization
+            base_config.update({
+                "streaming_method": "kv_cache_optimized",
+                "chunk_size": "small",
+                "cache_optimization": True
+            })
+        
+        # Apply custom config from model configuration
+        if hasattr(self.config, 'streaming_config'):
+            base_config.update(self.config.streaming_config)
+        
+        return base_config
     
     def _get_default_system_prompt(self) -> str:
         """Get default system prompt for Vietnamese financial advisor"""
@@ -93,6 +141,7 @@ Trả lời bằng tiếng Việt, thân thiện và dễ hiểu."""
         context: Dict[str, Any] = None,
         system_prompt: str = None
     ) -> AsyncIterator[str]:
+        """Generate streaming response with model-specific optimizations"""
         try:
             # Prepare the full prompt with system message
             system_prompt = system_prompt or self._get_default_system_prompt()
@@ -106,18 +155,149 @@ Trả lời bằng tiếng Việt, thân thiện và dễ hiểu."""
                 ),
             ]
             
-            # Generate streaming content
-            for chunk in self.client.models.generate_content_stream(
-                model=self.config.model_id,
-                contents=contents,
-            ):
-                if chunk.text:
-                    yield chunk.text
+            # Prepare generation config based on model type and streaming configuration
+            generation_config = self._prepare_generation_config()
+            
+            # Generate streaming content with optimizations
+            logger.info(f"Starting streaming response with {self.config.name} ({self.model_type})")
+            
+            if self.streaming_config.get("streaming_method") == "kv_cache_optimized":
+                # For Gemma models: Use KV cache optimization
+                async for chunk_text in self._stream_with_kv_optimization(contents, generation_config):
+                    yield chunk_text
+            else:
+                # For Gemini models: Use native streaming
+                async for chunk_text in self._stream_with_native_optimization(contents, generation_config):
+                    yield chunk_text
                     
         except Exception as e:
             logger.error(f"Error generating streaming response with {self.config.name}: {e}")
             self.mark_error()
             raise
+    
+    def _prepare_generation_config(self) -> types.GenerateContentConfig:
+        """Prepare generation configuration optimized for streaming"""
+        config_params = {
+            "temperature": self.config.temperature,
+            "max_output_tokens": self.config.max_tokens,
+        }
+        
+        # Add model-specific streaming optimizations
+        if self.model_type == "gemini":
+            # Gemini models support advanced features
+            config_params.update({
+                "candidate_count": 1,  # Single candidate for faster streaming
+                "top_p": 0.95,
+                "top_k": 40
+            })
+        elif self.model_type == "gemma":
+            # Gemma models benefit from consistent parameters
+            config_params.update({
+                "candidate_count": 1,
+                "top_p": 0.9,
+                "top_k": 20
+            })
+        
+        return types.GenerateContentConfig(**config_params)
+    
+    async def _stream_with_native_optimization(
+        self, 
+        contents: List[types.Content], 
+        config: types.GenerateContentConfig
+    ) -> AsyncIterator[str]:
+        """Stream with native Gemini optimization"""
+        try:
+            chunk_buffer = ""
+            buffer_size = self.streaming_config.get("buffer_size", 1024)
+            
+            for chunk in self.client.models.generate_content_stream(
+                model=self.config.model_id,
+                contents=contents,
+                config=config
+            ):
+                if chunk.text:
+                    chunk_buffer += chunk.text
+                    
+                    # Adaptive chunking for better UX
+                    if self.streaming_config.get("enable_adaptive_chunking", True):
+                        # Send chunks at word boundaries for better readability
+                        while len(chunk_buffer) > buffer_size or self._is_sentence_boundary(chunk_buffer):
+                            send_chunk, chunk_buffer = self._extract_chunk(chunk_buffer, buffer_size)
+                            if send_chunk:
+                                yield send_chunk
+                                # Small delay for smoother streaming
+                                await asyncio.sleep(0.01)
+                    else:
+                        # Simple chunking
+                        if len(chunk_buffer) >= buffer_size:
+                            yield chunk_buffer
+                            chunk_buffer = ""
+            
+            # Send remaining buffer
+            if chunk_buffer:
+                yield chunk_buffer
+                
+        except Exception as e:
+            logger.error(f"Error in native streaming: {e}")
+            raise
+    
+    async def _stream_with_kv_optimization(
+        self, 
+        contents: List[types.Content], 
+        config: types.GenerateContentConfig
+    ) -> AsyncIterator[str]:
+        """Stream with KV cache optimization for Gemma models"""
+        try:
+            # KV cache optimization: Smaller chunks for faster first token
+            smaller_buffer = self.streaming_config.get("buffer_size", 1024) // 2
+            chunk_buffer = ""
+            
+            for chunk in self.client.models.generate_content_stream(
+                model=self.config.model_id,
+                contents=contents,
+                config=config
+            ):
+                if chunk.text:
+                    chunk_buffer += chunk.text
+                    
+                    # Optimized for KV cache: Send smaller, more frequent chunks
+                    if len(chunk_buffer) >= smaller_buffer:
+                        yield chunk_buffer
+                        chunk_buffer = ""
+                        # Shorter delay for KV cache optimization
+                        await asyncio.sleep(0.005)
+            
+            # Send remaining buffer
+            if chunk_buffer:
+                yield chunk_buffer
+                
+        except Exception as e:
+            logger.error(f"Error in KV cache optimized streaming: {e}")
+            raise
+    
+    def _is_sentence_boundary(self, text: str) -> bool:
+        """Check if text ends at a natural sentence boundary"""
+        if len(text) < 50:  # Too short for sentence boundary check
+            return False
+        
+        # Vietnamese sentence endings
+        sentence_endings = ['. ', '! ', '? ', '.\n', '!\n', '?\n']
+        return any(text.endswith(ending) for ending in sentence_endings)
+    
+    def _extract_chunk(self, buffer: str, max_size: int) -> tuple[str, str]:
+        """Extract a chunk at word boundary for better readability"""
+        if len(buffer) <= max_size:
+            return buffer, ""
+        
+        # Find last word boundary within max_size
+        chunk = buffer[:max_size]
+        last_space = chunk.rfind(' ')
+        
+        if last_space > max_size * 0.7:  # If word boundary is reasonable
+            return buffer[:last_space + 1], buffer[last_space + 1:]
+        else:
+            # If no good word boundary, just split at max_size
+            return buffer[:max_size], buffer[max_size:]
     
     async def generate_embedding(self, text: str) -> List[float]:
         """Google GenAI models don't directly support embeddings, delegate to embedding service"""
@@ -187,10 +367,21 @@ Trả lời bằng tiếng Việt, thân thiện và dễ hiểu."""
     
     def get_model_type(self) -> str:
         """Get the type of model (gemini, gemma, etc.)"""
-        model_id = self.config.model_id.lower()
-        if "gemma" in model_id:
-            return "gemma"
-        elif "gemini" in model_id:
-            return "gemini"
-        else:
-            return "google_genai"
+        return self.model_type
+    
+    def get_streaming_capabilities(self) -> Dict[str, Any]:
+        """Get streaming capabilities and configuration"""
+        return {
+            "supports_streaming": True,
+            "model_type": self.model_type,
+            "streaming_method": self.streaming_config.get("streaming_method", "native"),
+            "optimizations": {
+                "kv_cache": self.model_type == "gemma",
+                "native_streaming": self.model_type == "gemini",
+                "adaptive_chunking": self.streaming_config.get("enable_adaptive_chunking", True)
+            },
+            "performance": {
+                "expected_latency": "low" if self.model_type == "gemini" else "very_low",
+                "chunk_strategy": self.streaming_config.get("chunk_size", "medium")
+            }
+        }

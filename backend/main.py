@@ -1,10 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import os
 import logging
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -167,7 +169,7 @@ async def chat(request: ChatRequest):
 
 @app.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
-    """Streaming chat endpoint"""
+    """Streaming chat endpoint using Server-Sent Events"""
     if not model_manager:
         raise HTTPException(status_code=503, detail="AI models not available")
     
@@ -180,13 +182,31 @@ async def chat_stream(request: ChatRequest):
         
         # Generate streaming response
         async def generate():
-            async for chunk in model_manager.generate_streaming_response(
-                prompt=request.message,
-                context=context
-            ):
-                yield f"data: {chunk}\n\n"
+            try:
+                async for chunk in model_manager.generate_streaming_response(
+                    prompt=request.message,
+                    context=context
+                ):
+                    # Format as SSE data
+                    yield f"data: {json.dumps({'content': chunk, 'type': 'content'})}\n\n"
+                
+                # Send completion signal
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                
+            except Exception as e:
+                logger.error(f"Streaming generation error: {e}")
+                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         
-        return generate()
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
         
     except Exception as e:
         logger.error(f"Streaming chat error: {e}")
