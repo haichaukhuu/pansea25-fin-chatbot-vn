@@ -54,6 +54,16 @@ class AuthResponse(BaseModel):
     custom_token: str
     message: Optional[str] = None
 
+class LoginResponse(BaseModel):
+    uid: str
+    email: Optional[str]
+    display_name: Optional[str]
+    email_verified: bool
+    id_token: str
+    refresh_token: str
+    expires_in: str
+    message: Optional[str] = None
+
 class TokenResponse(BaseModel):
     custom_token: str
     uid: str
