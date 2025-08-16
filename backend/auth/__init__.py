@@ -42,6 +42,7 @@ __all__ = [
     "UpdateUserRequest",
     "SetCustomClaimsRequest",
     "AuthResponse",
+    "LoginResponse",
     "UserResponse",
     "TokenResponse",
     "MessageResponse",
