@@ -7,9 +7,11 @@ interface ChatContextType {
   chats: Chat[];
   currentChat: Chat | null;
   files: FileItem[];
+  isStreaming: boolean;
+  streamingMessage: Message | null;
   createNewChat: () => string;
   selectChat: (chatId: string) => void;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
   searchChats: (query: string) => Chat[];
   uploadFile: (file: File) => Promise<void>;
   deleteChat: (chatId: string) => void;
@@ -90,6 +92,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [chats, setChats] = useState<Chat[]>(DEMO_CHATS);
   const [currentChat, setCurrentChat] = useState<Chat | null>(DEMO_CHATS[0]);
   const [files, setFiles] = useState<FileItem[]>(DEMO_FILES);
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
 
   const createNewChat = (): string => {
     const newChat: Chat = {
@@ -111,7 +115,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, useStreaming: boolean = true) => {
     if (!currentChat) return;
 
     const userMessage: Message = {
@@ -143,36 +147,163 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         timestamp: msg.timestamp.toISOString()
       }));
 
-      // Call the real API
-      const response = await apiService.sendMessage({
+      const request = {
         message: content,
         chat_history: chatHistory.slice(0, -1), // Exclude the current message we just sent
         user_profile: {} // You can add user profile data here if available
-      });
-
-      // Create bot response message
-      const botMessage: Message = {
-        id: Math.random().toString(36).substr(2, 9),
-        content: response.response,
-        sender: 'bot',
-        timestamp: new Date(),
-        chatId: currentChat.id
       };
 
-      // Update chat with bot response
-      const updatedChat = {
-        ...chatWithUserMessage,
-        messages: [...chatWithUserMessage.messages, botMessage],
-        updatedAt: new Date()
-      };
+      if (useStreaming) {
+        // Use streaming approach
+        setIsStreaming(true);
+        
+        // Create initial streaming message
+        const streamingMsg: Message = {
+          id: Math.random().toString(36).substr(2, 9),
+          content: '',
+          sender: 'bot',
+          timestamp: new Date(),
+          chatId: currentChat.id,
+          isStreaming: true,
+          isComplete: false
+        };
 
-      setChats(prev => prev.map(chat => 
-        chat.id === currentChat.id ? updatedChat : chat
-      ));
-      setCurrentChat(updatedChat);
+        setStreamingMessage(streamingMsg);
+
+        // Add streaming message to chat
+        const chatWithStreamingMessage = {
+          ...chatWithUserMessage,
+          messages: [...chatWithUserMessage.messages, streamingMsg],
+          updatedAt: new Date()
+        };
+
+        setChats(prev => prev.map(chat => 
+          chat.id === currentChat.id ? chatWithStreamingMessage : chat
+        ));
+        setCurrentChat(chatWithStreamingMessage);
+
+        await apiService.sendStreamingMessage(
+          request,
+          // On chunk received
+          (chunk: string) => {
+            setStreamingMessage(prevMsg => {
+              if (!prevMsg) return null;
+              const updatedMsg = {
+                ...prevMsg,
+                content: prevMsg.content + chunk
+              };
+              
+              // Update the message in the chat
+              setChats(prev => prev.map(chat => 
+                chat.id === currentChat.id 
+                  ? {
+                      ...chat,
+                      messages: chat.messages.map(msg => 
+                        msg.id === updatedMsg.id ? updatedMsg : msg
+                      )
+                    }
+                  : chat
+              ));
+              setCurrentChat(prev => prev ? {
+                ...prev,
+                messages: prev.messages.map(msg => 
+                  msg.id === updatedMsg.id ? updatedMsg : msg
+                )
+              } : null);
+
+              return updatedMsg;
+            });
+          },
+          // On complete
+          () => {
+            setIsStreaming(false);
+            setStreamingMessage(prevMsg => {
+              if (!prevMsg) return null;
+              const completedMsg = {
+                ...prevMsg,
+                isStreaming: false,
+                isComplete: true
+              };
+
+              // Update the final message in the chat
+              setChats(prev => prev.map(chat => 
+                chat.id === currentChat.id 
+                  ? {
+                      ...chat,
+                      messages: chat.messages.map(msg => 
+                        msg.id === completedMsg.id ? completedMsg : msg
+                      )
+                    }
+                  : chat
+              ));
+              setCurrentChat(prev => prev ? {
+                ...prev,
+                messages: prev.messages.map(msg => 
+                  msg.id === completedMsg.id ? completedMsg : msg
+                )
+              } : null);
+
+              return null; // Clear streaming message
+            });
+          },
+          // On error
+          (error: Error) => {
+            console.error('Streaming error:', error);
+            setIsStreaming(false);
+            setStreamingMessage(null);
+            
+            // Add error message
+            const errorMessage: Message = {
+              id: Math.random().toString(36).substr(2, 9),
+              content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+              sender: 'bot',
+              timestamp: new Date(),
+              chatId: currentChat.id
+            };
+
+            const errorChat = {
+              ...chatWithUserMessage,
+              messages: [...chatWithUserMessage.messages, errorMessage],
+              updatedAt: new Date()
+            };
+
+            setChats(prev => prev.map(chat => 
+              chat.id === currentChat.id ? errorChat : chat
+            ));
+            setCurrentChat(errorChat);
+          }
+        );
+      } else {
+        // Use non-streaming approach (fallback)
+        const response = await apiService.sendMessage(request);
+
+        // Create bot response message
+        const botMessage: Message = {
+          id: Math.random().toString(36).substr(2, 9),
+          content: response.response,
+          sender: 'bot',
+          timestamp: new Date(),
+          chatId: currentChat.id,
+          isComplete: true
+        };
+
+        // Update chat with bot response
+        const updatedChat = {
+          ...chatWithUserMessage,
+          messages: [...chatWithUserMessage.messages, botMessage],
+          updatedAt: new Date()
+        };
+
+        setChats(prev => prev.map(chat => 
+          chat.id === currentChat.id ? updatedChat : chat
+        ));
+        setCurrentChat(updatedChat);
+      }
 
     } catch (error) {
       console.error('Failed to get AI response:', error);
+      setIsStreaming(false);
+      setStreamingMessage(null);
       
       // Fallback to error message if API fails
       const errorMessage: Message = {
@@ -232,6 +363,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       chats,
       currentChat,
       files,
+      isStreaming,
+      streamingMessage,
       createNewChat,
       selectChat,
       sendMessage,
