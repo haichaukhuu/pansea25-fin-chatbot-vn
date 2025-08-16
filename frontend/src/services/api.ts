@@ -33,6 +33,13 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface GoogleLoginRequest {
+  id_token: string;
+  email: string;
+  name: string;
+  avatar?: string;
+}
+
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -43,19 +50,23 @@ export interface AuthResponse {
   uid: string;
   email: string;
   display_name?: string;
+  photo_url?: string;
   email_verified: boolean;
   id_token: string;
   refresh_token: string;
   expires_in: string;
+  provider?: string;
 }
 
 export interface UserResponse {
   uid: string;
   email: string;
   display_name?: string;
+  photo_url?: string;
   email_verified: boolean;
   created_at?: number;
   last_sign_in?: number;
+  provider?: string;
 }
 
 export interface ApiResponse<T = any> {
@@ -218,6 +229,22 @@ class ApiService {
       return { 
         success: false, 
         message: error.message || 'Login failed' 
+      };
+    }
+  }
+
+  async loginWithGoogle(request: GoogleLoginRequest): Promise<ApiResponse<AuthResponse>> {
+    try {
+      const response = await this.request<AuthResponse>('/api/auth/google', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      });
+      return { success: true, user: response, access_token: response.id_token };
+    } catch (error: any) {
+      console.error('Google login failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Google login failed' 
       };
     }
   }

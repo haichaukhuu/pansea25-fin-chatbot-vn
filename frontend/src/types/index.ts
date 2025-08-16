@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  provider?: 'email' | 'google';
 }
 
 export interface Message {
