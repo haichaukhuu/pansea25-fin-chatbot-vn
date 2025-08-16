@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+from config import API_CONFIG
+
 # Import AI model components
 from ai_models.model_factory import ModelFactory
 from ai_models.model_manager import ModelManager
@@ -33,7 +35,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Vite dev server
+    allow_origins=API_CONFIG["cors_origins"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
