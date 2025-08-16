@@ -26,3 +26,4 @@ pyrebase4
 # Additional dependencies
 email-validator
 passlib[bcrypt]
+setuptools
