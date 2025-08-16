@@ -11,11 +11,21 @@ class FirebaseAuthService:
     """Firebase Authentication Service for user management"""
     
     def __init__(self):
-        self.admin_auth = firebase_config.get_admin_auth()
-        self.client_auth = firebase_config.get_client_auth()
+        try:
+            self.admin_auth = firebase_config.get_admin_auth()
+            self.client_auth = firebase_config.get_client_auth()
+            logger.info("Firebase Auth Service initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Firebase Auth Service: {e}")
+            # Set to None so we can handle errors gracefully
+            self.admin_auth = None
+            self.client_auth = None
     
     async def register_user(self, email: str, password: str, display_name: str = None) -> Dict[str, Any]:
         """Register a new user with email and password"""
+        if not self.admin_auth or not self.client_auth:
+            raise HTTPException(status_code=503, detail="Firebase authentication service not available")
+        
         try:
             # Create user with Firebase Client SDK (for password authentication)
             user_data = self.client_auth.create_user_with_email_and_password(email, password)
@@ -51,6 +61,9 @@ class FirebaseAuthService:
     
     async def login_user(self, email: str, password: str) -> Dict[str, Any]:
         """Login user with email and password"""
+        if not self.admin_auth or not self.client_auth:
+            raise HTTPException(status_code=503, detail="Firebase authentication service not available")
+        
         try:
             # Sign in with Firebase Client SDK
             user_data = self.client_auth.sign_in_with_email_and_password(email, password)
@@ -81,6 +94,9 @@ class FirebaseAuthService:
     
     async def verify_id_token(self, id_token: str) -> Dict[str, Any]:
         """Verify Firebase ID token"""
+        if not self.admin_auth:
+            raise HTTPException(status_code=503, detail="Firebase authentication service not available")
+        
         try:
             # Remove 'Bearer ' prefix if present
             if id_token.startswith('Bearer '):
