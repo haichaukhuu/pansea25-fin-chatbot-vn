@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import LanguageSelector from '../common/LanguageSelector';
@@ -13,7 +14,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +34,38 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      // Decode the JWT token to get user info
+      const payload = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
+      
+      const success = await loginWithGoogle({
+        credential: credentialResponse.credential,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture
+      });
+      
+      if (success) {
+        onSuccess();
+      } else {
+        setError('Google login failed. Please try again.');
+      }
+    } catch (err) {
+      setError('An error occurred during Google login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google login failed. Please try again.');
+    setLoading(false);
   };
 
   return (
@@ -60,18 +93,34 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           <p className="mt-2 text-center text-sm" style={{ color: '#ffffff' }}>
             {t('header.subtitle')}
           </p>
-          {/* <div className="mt-4 p-4 rounded-md" 
-            style={{ 
-              backgroundColor: '#21A691'
-            }}
-          >
-            <p className="text-sm" style={{ color: '#FFFFFF' }}>
-              <strong>Demo Account:</strong><br />
-              Email: admin123@gmail.com<br />
-              Password: admin123
-            </p>
-          </div> */}
         </div>
+
+        {/* Google Sign-in Button */}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            theme="filled_blue"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+            locale="vi"
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t" style={{ borderColor: '#ffffff' }}></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', color: '#ffffff' }}>
+              {t('login.or_continue_with')}
+            </span>
+          </div>
+        </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>

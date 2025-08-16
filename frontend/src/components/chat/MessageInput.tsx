@@ -2,9 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   PaperAirplaneIcon,
   PaperClipIcon,
-  MicrophoneIcon,
-  BoltIcon,
-  ClockIcon
+  MicrophoneIcon
 } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
 
@@ -16,14 +14,13 @@ interface MessageInputProps {
 export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled = false }) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [useStreaming, setUseStreaming] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useChat();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
-      await onSendMessage(message.trim(), useStreaming);
+      await onSendMessage(message.trim(), true); // Always use streaming
       setMessage('');
     }
   };
@@ -79,35 +76,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
 
   return (
     <div className="p-4 shadow-lg bg-white">
-      {/* Streaming Toggle */}
-      <div className="mb-2 flex items-center justify-end space-x-2">
-        <span className="text-xs" style={{ color: '#B4B4B2' }}>
-          Chế độ phản hồi:
-        </span>
-        <button
-          type="button"
-          onClick={() => setUseStreaming(!useStreaming)}
-          className="flex items-center space-x-1 px-2 py-1 rounded-md text-xs transition-colors"
-          style={{
-            backgroundColor: useStreaming ? '#21A691' : '#B4B4B2',
-            color: '#FFFFFF'
-          }}
-          title={useStreaming ? 'Streaming mode (real-time)' : 'Standard mode (wait for complete response)'}
-        >
-          {useStreaming ? (
-            <>
-              <BoltIcon className="h-3 w-3" />
-              <span>Streaming</span>
-            </>
-          ) : (
-            <>
-              <ClockIcon className="h-3 w-3" />
-              <span>Standard</span>
-            </>
-          )}
-        </button>
-      </div>
-
       <form 
         onSubmit={handleSubmit} 
         className="flex items-center w-full rounded-lg border-2"

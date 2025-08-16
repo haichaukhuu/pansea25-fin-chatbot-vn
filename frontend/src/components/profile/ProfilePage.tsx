@@ -164,11 +164,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 <div className="space-y-6">
                   {/* Avatar */}
                   <div className="flex items-center space-x-6">
-                    <div className="w-20 h-20 rounded-full flex items-center justify-center" 
-                      style={{ backgroundColor: '#21A691' }}
-                    >
-                      <UserCircleIcon className="h-12 w-12" style={{ color: '#FFFFFF' }} />
-                    </div>
+                    {user?.avatar ? (
+                      <img 
+                        src={user.avatar} 
+                        alt={user.name}
+                        className="w-20 h-20 rounded-full object-cover border-2"
+                        style={{ borderColor: '#21A691' }}
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full flex items-center justify-center" 
+                        style={{ backgroundColor: '#21A691' }}
+                      >
+                        <UserCircleIcon className="h-12 w-12" style={{ color: '#FFFFFF' }} />
+                      </div>
+                    )}
                     <div>
                       <button className="px-4 py-2 text-sm rounded-lg transition-colors"
                       style={{ backgroundColor: '#21A691', color: '#ffffff' }}
@@ -184,6 +193,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                         {t('profile.change_avatar')}
                       </button>
                       <p className="text-sm mt-1" style={{ color: '#B4B4B2' }}>{t('profile.avatar_hint')}</p>
+                      {user?.provider === 'google' && (
+                        <p className="text-xs mt-1" style={{ color: '#21A691' }}>
+                          {t('profile.google_account')}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -339,39 +353,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 <h2 className="text-lg font-semibold text-dark-900 mb-6">{t('profile.preferences')}</h2>
                 
                 <div className="space-y-6">
-                  {/* Theme */}
-                  {/* <div>
-                    <label className="block text-sm font-medium text-dark-700 mb-3">
-                      Theme
-                    </label>
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => setIsDarkMode(false)}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-                          !isDarkMode
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-neutral-300 hover:bg-neutral-50'
-                        }`}
-                      >
-                        <SunIcon className="h-4 w-4" />
-                        <span>Light</span>
-                      </button>
-                      <button
-                        onClick={() => setIsDarkMode(true)}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-                          isDarkMode
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-neutral-300 hover:bg-neutral-50'
-                        }`}
-                      >
-                        <MoonIcon className="h-4 w-4" />
-                        <span>Dark</span>
-                      </button>
-                    </div>
-                  </div> */}
-
-
-
                   {/* Notifications */}
                   <div>
                     <div className="flex items-center justify-between">
