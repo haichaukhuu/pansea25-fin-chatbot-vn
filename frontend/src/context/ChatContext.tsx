@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Chat, Message, FileItem } from '../types';
+import { apiService, type ChatMessage } from '../services/api';
 
 interface ChatContextType {
   chats: Chat[];
@@ -8,7 +9,7 @@ interface ChatContextType {
   files: FileItem[];
   createNewChat: () => string;
   selectChat: (chatId: string) => void;
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string) => Promise<void>;
   searchChats: (query: string) => Chat[];
   uploadFile: (file: File) => Promise<void>;
   deleteChat: (chatId: string) => void;
@@ -110,7 +111,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const sendMessage = (content: string) => {
+  const sendMessage = async (content: string) => {
     if (!currentChat) return;
 
     const userMessage: Message = {
@@ -121,26 +122,78 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       chatId: currentChat.id
     };
 
-    // Simulate bot response
-    const botMessage: Message = {
-      id: Math.random().toString(36).substr(2, 9),
-      content: 'Thank you for your message. This is a demo response from the AI assistant. In the actual implementation, this would be connected to your Python backend.',
-      sender: 'bot',
-      timestamp: new Date(Date.now() + 1000),
-      chatId: currentChat.id
-    };
-
-    const updatedChat = {
+    // Add user message immediately
+    const chatWithUserMessage = {
       ...currentChat,
-      messages: [...currentChat.messages, userMessage, botMessage],
+      messages: [...currentChat.messages, userMessage],
       updatedAt: new Date(),
       title: currentChat.messages.length === 0 ? content.slice(0, 30) + '...' : currentChat.title
     };
 
     setChats(prev => prev.map(chat => 
-      chat.id === currentChat.id ? updatedChat : chat
+      chat.id === currentChat.id ? chatWithUserMessage : chat
     ));
-    setCurrentChat(updatedChat);
+    setCurrentChat(chatWithUserMessage);
+
+    try {
+      // Prepare chat history for API call
+      const chatHistory: ChatMessage[] = chatWithUserMessage.messages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'bot',
+        content: msg.content,
+        timestamp: msg.timestamp.toISOString()
+      }));
+
+      // Call the real API
+      const response = await apiService.sendMessage({
+        message: content,
+        chat_history: chatHistory.slice(0, -1), // Exclude the current message we just sent
+        user_profile: {} // You can add user profile data here if available
+      });
+
+      // Create bot response message
+      const botMessage: Message = {
+        id: Math.random().toString(36).substr(2, 9),
+        content: response.response,
+        sender: 'bot',
+        timestamp: new Date(),
+        chatId: currentChat.id
+      };
+
+      // Update chat with bot response
+      const updatedChat = {
+        ...chatWithUserMessage,
+        messages: [...chatWithUserMessage.messages, botMessage],
+        updatedAt: new Date()
+      };
+
+      setChats(prev => prev.map(chat => 
+        chat.id === currentChat.id ? updatedChat : chat
+      ));
+      setCurrentChat(updatedChat);
+
+    } catch (error) {
+      console.error('Failed to get AI response:', error);
+      
+      // Fallback to error message if API fails
+      const errorMessage: Message = {
+        id: Math.random().toString(36).substr(2, 9),
+        content: 'Sorry, I encountered an error while processing your message. Please make sure the backend server is running and try again.',
+        sender: 'bot',
+        timestamp: new Date(),
+        chatId: currentChat.id
+      };
+
+      const errorChat = {
+        ...chatWithUserMessage,
+        messages: [...chatWithUserMessage.messages, errorMessage],
+        updatedAt: new Date()
+      };
+
+      setChats(prev => prev.map(chat => 
+        chat.id === currentChat.id ? errorChat : chat
+      ));
+      setCurrentChat(errorChat);
+    }
   };
 
   const searchChats = (query: string): Chat[] => {
