@@ -7,7 +7,7 @@ import {
 import { useChat } from '../../context/ChatContext';
 
 interface MessageInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -17,10 +17,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile } = useChat();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
-      onSendMessage(message.trim());
+      await onSendMessage(message.trim());
       setMessage('');
     }
   };
