@@ -21,73 +21,73 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // Demo data
-const DEMO_CHATS: Chat[] = [
-  {
-    id: '1',
-    title: 'Demo Chatbot Tài chính',
-    createdAt: new Date(2025, 6, 30),
-    updatedAt: new Date(2025, 6, 30),
-    messages: [
-      {
-        id: '1',
-        content: 'Xin chào! Bạn có thể giúp tôi lập kế hoạch tài chính không?',
-        sender: 'user',
-        timestamp: new Date(2025, 6, 30, 10, 0),
-        chatId: '1'
-      },
-      {
-        id: '2',
-        content: 'Tất nhiên! Tôi rất vui được giúp bạn lập kế hoạch tài chính. Hãy bắt đầu với mục tiêu tài chính của bạn. Bạn muốn đạt được điều gì?',
-        sender: 'bot',
-        timestamp: new Date(2025, 6, 30, 10, 1),
-        chatId: '1'
-      }
-    ]
-  },
-  {
-    id: '2',
-    title: 'Trợ giúp Chatbot Tài chính',
-    createdAt: new Date(2025, 6, 29),
-    updatedAt: new Date(2025, 6, 29),
-    messages: [
-      {
-        id: '3',
-        content: 'Những chiến lược đầu tư nào tốt cho người mới bắt đầu?',
-        sender: 'user',
-        timestamp: new Date(2025, 6, 29, 14, 30),
-        chatId: '2'
-      },
-      {
-        id: '4',
-        content: 'Đối với người mới bắt đầu, tôi khuyên bạn nên bắt đầu với quỹ chỉ số đa dạng hóa, thiết lập quỹ khẩn cấp và hiểu rõ mức độ chấp nhận rủi ro của mình. Bạn có muốn tôi giải thích chi tiết về bất kỳ điều nào trong số này không?',
-        sender: 'bot',
-        timestamp: new Date(2025, 6, 29, 14, 31),
-        chatId: '2'
-      }
-    ]
-  }
-];
+// const DEMO_CHATS: Chat[] = [
+//   {
+//     id: '1',
+//     title: 'Demo Chatbot Tài chính',
+//     createdAt: new Date(2025, 6, 30),
+//     updatedAt: new Date(2025, 6, 30),
+//     messages: [
+//       {
+//         id: '1',
+//         content: 'Xin chào! Bạn có thể giúp tôi lập kế hoạch tài chính không?',
+//         sender: 'user',
+//         timestamp: new Date(2025, 6, 30, 10, 0),
+//         chatId: '1'
+//       },
+//       {
+//         id: '2',
+//         content: 'Tất nhiên! Tôi rất vui được giúp bạn lập kế hoạch tài chính. Hãy bắt đầu với mục tiêu tài chính của bạn. Bạn muốn đạt được điều gì?',
+//         sender: 'bot',
+//         timestamp: new Date(2025, 6, 30, 10, 1),
+//         chatId: '1'
+//       }
+//     ]
+//   },
+//   {
+//     id: '2',
+//     title: 'Trợ giúp Chatbot Tài chính',
+//     createdAt: new Date(2025, 6, 29),
+//     updatedAt: new Date(2025, 6, 29),
+//     messages: [
+//       {
+//         id: '3',
+//         content: 'Những chiến lược đầu tư nào tốt cho người mới bắt đầu?',
+//         sender: 'user',
+//         timestamp: new Date(2025, 6, 29, 14, 30),
+//         chatId: '2'
+//       },
+//       {
+//         id: '4',
+//         content: 'Đối với người mới bắt đầu, tôi khuyên bạn nên bắt đầu với quỹ chỉ số đa dạng hóa, thiết lập quỹ khẩn cấp và hiểu rõ mức độ chấp nhận rủi ro của mình. Bạn có muốn tôi giải thích chi tiết về bất kỳ điều nào trong số này không?',
+//         sender: 'bot',
+//         timestamp: new Date(2025, 6, 29, 14, 31),
+//         chatId: '2'
+//       }
+//     ]
+//   }
+// ];
 
-const DEMO_FILES: FileItem[] = [
-  {
-    id: '1',
-    name: 'Kế_hoạch_Tài_chính_2025.pdf',
-    type: 'application/pdf',
-    size: 1024000,
-    url: '/demo/financial_plan.pdf',
-    createdAt: new Date(2025, 6, 30),
-    chatId: '1'
-  },
-  {
-    id: '2',
-    name: 'Danh_mục_Đầu_tư.xlsx',
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    size: 512000,
-    url: '/demo/portfolio.xlsx',
-    createdAt: new Date(2025, 6, 29),
-    chatId: '2'
-  }
-];
+// const DEMO_FILES: FileItem[] = [
+//   {
+//     id: '1',
+//     name: 'Kế_hoạch_Tài_chính_2025.pdf',
+//     type: 'application/pdf',
+//     size: 1024000,
+//     url: '/demo/financial_plan.pdf',
+//     createdAt: new Date(2025, 6, 30),
+//     chatId: '1'
+//   },
+//   {
+//     id: '2',
+//     name: 'Danh_mục_Đầu_tư.xlsx',
+//     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+//     size: 512000,
+//     url: '/demo/portfolio.xlsx',
+//     createdAt: new Date(2025, 6, 29),
+//     chatId: '2'
+//   }
+// ];
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [chats, setChats] = useState<Chat[]>([]);
