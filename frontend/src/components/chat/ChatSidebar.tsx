@@ -195,9 +195,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               }}
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                  {chat.title}
-                                </p>
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-sm font-medium truncate">
+                                    {chat.title}
+                                  </p>
+                                  {chat.id === 'demo-chat-viet' && (
+                                    <span className="px-2 py-1 text-xs rounded-full" style={{ backgroundColor: '#87DF2C', color: '#000000' }}>
+                                      Demo
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-xs opacity-75 truncate">
                                   {chat.messages.length > 0 
                                     ? chat.messages[chat.messages.length - 1].content.slice(0, 50) + '...'
@@ -208,16 +215,18 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                   {formatTime(chat.updatedAt)}
                                 </p>
                               </div>
-                              <button
-                                onClick={(e) => handleDeleteChat(e, chat.id)}
-                                className="opacity-100 p-1 transition-opacity"
-                                style={{ color: '#FFFFFF' }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#ff6b6b'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#FFFFFF'}
-                                title="Delete chat"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </button>
+                              {chat.id !== 'demo-chat-viet' && (
+                                <button
+                                  onClick={(e) => handleDeleteChat(e, chat.id)}
+                                  className="opacity-100 p-1 transition-opacity"
+                                  style={{ color: '#FFFFFF' }}
+                                  onMouseEnter={(e) => e.currentTarget.style.color = '#ff6b6b'}
+                                  onMouseLeave={(e) => e.currentTarget.style.color = '#FFFFFF'}
+                                  title="Delete chat"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                           ))}
                       </div>

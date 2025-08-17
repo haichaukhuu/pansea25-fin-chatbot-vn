@@ -64,7 +64,43 @@ export default {
           950: '#111827',
         },
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            color: '#27403E',
+            h1: {
+              color: '#27403E',
+              fontWeight: '700',
+            },
+            h2: {
+              color: '#27403E',
+              fontWeight: '600',
+            },
+            h3: {
+              color: '#27403E',
+              fontWeight: '600',
+            },
+            strong: {
+              color: '#27403E',
+              fontWeight: '600',
+            },
+            code: {
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              fontWeight: '500',
+            },
+            'code::before': {
+              content: '""',
+            },
+            'code::after': {
+              content: '""',
+            },
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }
