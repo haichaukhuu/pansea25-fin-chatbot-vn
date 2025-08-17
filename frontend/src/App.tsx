@@ -6,6 +6,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { ChatInterface } from './components/chat/ChatInterface';
+import { ChatInitializer } from './components/chat/ChatInitializer';
 import { ProfilePage } from './components/profile/ProfilePage';
 import './App.css';
 
@@ -38,25 +39,27 @@ const AppContent: React.FC = () => {
 
   return (
     <ChatProvider>
-      <Routes>
-        <Route 
-          path="/" 
-          element={
-            <ProtectedRoute>
-              {currentView === 'chat' ? (
-                <ChatInterface 
-                  onNavigateToProfile={() => setCurrentView('profile')} 
-                />
-              ) : (
-                <ProfilePage 
-                  onBack={() => setCurrentView('chat')} 
-                />
-              )}
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <ChatInitializer>
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                {currentView === 'chat' ? (
+                  <ChatInterface 
+                    onNavigateToProfile={() => setCurrentView('profile')} 
+                  />
+                ) : (
+                  <ProfilePage 
+                    onBack={() => setCurrentView('chat')} 
+                  />
+                )}
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ChatInitializer>
     </ChatProvider>
   );
 };

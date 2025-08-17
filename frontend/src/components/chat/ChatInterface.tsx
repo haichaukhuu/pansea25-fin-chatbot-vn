@@ -21,8 +21,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onNavigateToProfil
   const { currentChat, sendMessage } = useChat();
   const { t } = useLanguage();
 
-  const handleSendMessage = async (message: string, useStreaming?: boolean) => {
-    await sendMessage(message, useStreaming);
+  const handleSendMessage = async (message: string) => {
+    await sendMessage(message);
   };
 
   return (

@@ -15,6 +15,7 @@ interface ChatContextType {
   searchChats: (query: string) => Chat[];
   uploadFile: (file: File) => Promise<void>;
   deleteChat: (chatId: string) => void;
+  initializeForNewUser: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -23,20 +24,20 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const DEMO_CHATS: Chat[] = [
   {
     id: '1',
-    title: 'Financial Chatbot Demo',
+    title: 'Demo Chatbot Tài chính',
     createdAt: new Date(2025, 6, 30),
     updatedAt: new Date(2025, 6, 30),
     messages: [
       {
         id: '1',
-        content: 'Hello! Can you help me with financial planning?',
+        content: 'Xin chào! Bạn có thể giúp tôi lập kế hoạch tài chính không?',
         sender: 'user',
         timestamp: new Date(2025, 6, 30, 10, 0),
         chatId: '1'
       },
       {
         id: '2',
-        content: 'Of course! I\'d be happy to help you with financial planning. Let\'s start with your financial goals. What are you looking to achieve?',
+        content: 'Tất nhiên! Tôi rất vui được giúp bạn lập kế hoạch tài chính. Hãy bắt đầu với mục tiêu tài chính của bạn. Bạn muốn đạt được điều gì?',
         sender: 'bot',
         timestamp: new Date(2025, 6, 30, 10, 1),
         chatId: '1'
@@ -45,20 +46,20 @@ const DEMO_CHATS: Chat[] = [
   },
   {
     id: '2',
-    title: 'Financial Chatbot Help',
+    title: 'Trợ giúp Chatbot Tài chính',
     createdAt: new Date(2025, 6, 29),
     updatedAt: new Date(2025, 6, 29),
     messages: [
       {
         id: '3',
-        content: 'What are some good investment strategies for beginners?',
+        content: 'Những chiến lược đầu tư nào tốt cho người mới bắt đầu?',
         sender: 'user',
         timestamp: new Date(2025, 6, 29, 14, 30),
         chatId: '2'
       },
       {
         id: '4',
-        content: 'For beginners, I recommend starting with diversified index funds, setting up an emergency fund, and understanding your risk tolerance. Would you like me to explain any of these in detail?',
+        content: 'Đối với người mới bắt đầu, tôi khuyên bạn nên bắt đầu với quỹ chỉ số đa dạng hóa, thiết lập quỹ khẩn cấp và hiểu rõ mức độ chấp nhận rủi ro của mình. Bạn có muốn tôi giải thích chi tiết về bất kỳ điều nào trong số này không?',
         sender: 'bot',
         timestamp: new Date(2025, 6, 29, 14, 31),
         chatId: '2'
@@ -70,7 +71,7 @@ const DEMO_CHATS: Chat[] = [
 const DEMO_FILES: FileItem[] = [
   {
     id: '1',
-    name: 'Financial_Plan_2025.pdf',
+    name: 'Kế_hoạch_Tài_chính_2025.pdf',
     type: 'application/pdf',
     size: 1024000,
     url: '/demo/financial_plan.pdf',
@@ -79,7 +80,7 @@ const DEMO_FILES: FileItem[] = [
   },
   {
     id: '2',
-    name: 'Investment_Portfolio.xlsx',
+    name: 'Danh_mục_Đầu_tư.xlsx',
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     size: 512000,
     url: '/demo/portfolio.xlsx',
@@ -89,16 +90,16 @@ const DEMO_FILES: FileItem[] = [
 ];
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [chats, setChats] = useState<Chat[]>(DEMO_CHATS);
-  const [currentChat, setCurrentChat] = useState<Chat | null>(DEMO_CHATS[0]);
-  const [files, setFiles] = useState<FileItem[]>(DEMO_FILES);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChat, setCurrentChat] = useState<Chat | null>(null);
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
 
   const createNewChat = (): string => {
     const newChat: Chat = {
       id: Math.random().toString(36).substr(2, 9),
-      title: 'Financial Chatbot',
+      title: 'Cuộc trò chuyện mới',
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date()
@@ -358,6 +359,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const initializeForNewUser = () => {
+    // Create a new chat for the user when they sign in
+    const newChat: Chat = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'Cuộc trò chuyện mới',
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    setChats([newChat]);
+    setCurrentChat(newChat);
+    setFiles([]);
+  };
+
   return (
     <ChatContext.Provider value={{
       chats,
@@ -370,7 +385,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       sendMessage,
       searchChats,
       uploadFile,
-      deleteChat
+      deleteChat,
+      initializeForNewUser
     }}>
       {children}
     </ChatContext.Provider>
