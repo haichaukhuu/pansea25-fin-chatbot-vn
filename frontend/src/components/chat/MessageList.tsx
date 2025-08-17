@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { TypingIndicator } from '../common/TypingIndicator';
@@ -120,12 +122,43 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             border: isUser ? 'none' : '2px solid #B4B4B2'
           }}
         >
-          <p className="text-sm whitespace-pre-wrap">
-            {displayContent}
-            {message.isStreaming && (
-              <span className="animate-pulse">|</span>
-            )}
-          </p>
+          {isUser ? (
+            <p className="text-sm whitespace-pre-wrap">
+              {displayContent}
+              {message.isStreaming && (
+                <span className="animate-pulse">|</span>
+              )}
+            </p>
+          ) : (
+            <div className="chat-markdown">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Customize markdown components to match the design
+                  h1: ({ children }) => <h1>{children}</h1>,
+                  h2: ({ children }) => <h2>{children}</h2>,
+                  h3: ({ children }) => <h3>{children}</h3>,
+                  p: ({ children }) => <p>{children}</p>,
+                  ul: ({ children }) => <ul>{children}</ul>,
+                  ol: ({ children }) => <ol>{children}</ol>,
+                  li: ({ children }) => <li>{children}</li>,
+                  strong: ({ children }) => <strong>{children}</strong>,
+                  em: ({ children }) => <em>{children}</em>,
+                  code: ({ children }) => <code>{children}</code>,
+                  pre: ({ children }) => <pre>{children}</pre>,
+                  blockquote: ({ children }) => <blockquote>{children}</blockquote>,
+                  hr: () => <hr />,
+                  // Handle emojis and special characters
+                  text: ({ children }) => <span>{children}</span>
+                }}
+              >
+                {displayContent}
+              </ReactMarkdown>
+              {message.isStreaming && (
+                <span className="animate-pulse">|</span>
+              )}
+            </div>
+          )}
         </div>
         <div className={`mt-1 text-xs ${isUser ? 'text-right' : 'text-left'}`} style={{ color: '#B4B4B2' }}>
           {formatTime(message.timestamp)}
