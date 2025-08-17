@@ -2,9 +2,11 @@ import React, { useState, useRef } from 'react';
 import { 
   PaperAirplaneIcon,
   PaperClipIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  StopIcon
 } from '@heroicons/react/24/outline';
 import { useChat } from '../../context/ChatContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface MessageInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -15,8 +17,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadFile } = useChat();
-
+  const { uploadFile, isStreaming, stopGeneration } = useChat();
+  const { t } = useLanguage();
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
@@ -70,7 +73,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
 
       recognition.start();
     } else {
-      alert('Speech recognition is not supported in your browser.');
+      alert(t('input.speech_not_supported'));
     }
   };
 
@@ -92,7 +95,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           onMouseEnter={(e) => { e.currentTarget.style.color = '#87DF2C'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = '#21A691'; }}
           title="Upload file"
-          disabled={disabled}
+          disabled={disabled || isStreaming}
         >
           <PaperClipIcon className="h-5 w-5" />
         </button>
@@ -113,7 +116,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
             if (!isRecording) e.currentTarget.style.color = '#21A691';
           }}
           title="Voice input"
-          disabled={disabled}
+          disabled={disabled || isStreaming}
         >
           <MicrophoneIcon className="h-5 w-5" />
         </button>
@@ -123,9 +126,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Type your message..."
+          placeholder={isStreaming ? t('input.placeholder_generating') : t('input.placeholder_normal')}
           rows={1}
-          disabled={disabled}
+          disabled={disabled || isStreaming}
           className="flex-1 px-4 py-2 focus:outline-none resize-none disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             minHeight: '42px',
@@ -141,24 +144,29 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           }}
         />
 
-        {/* Send button */}
+        {/* Send/Stop button */}
         <button
-          type="submit"
-          disabled={!message.trim() || disabled}
+          type={isStreaming ? "button" : "submit"}
+          onClick={isStreaming ? stopGeneration : undefined}
+          disabled={!isStreaming && (!message.trim() || disabled)}
           className="p-3 flex items-center justify-center rounded-r-lg focus:outline-none disabled:opacity-50 transition-colors font-medium"
           style={{
-            backgroundColor: '#87DF2C',
-            color: '#27403E'
+            backgroundColor: isStreaming ? '#ff4444' : '#87DF2C',
+            color: isStreaming ? '#FFFFFF' : '#27403E'
           }}
           onMouseEnter={(e) => {
-            if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#7BC628';
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.backgroundColor = isStreaming ? '#cc3333' : '#7BC628';
+            }
           }}
           onMouseLeave={(e) => {
-            if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#87DF2C';
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.backgroundColor = isStreaming ? '#ff4444' : '#87DF2C';
+            }
           }}
-          title="Send message"
+          title={isStreaming ? t('input.stop_generation') : t('input.send_message')}
         >
-          <PaperAirplaneIcon className="h-5 w-5" />
+          {isStreaming ? <StopIcon className="h-5 w-5" /> : <PaperAirplaneIcon className="h-5 w-5" />}
         </button>
       </form>
 
@@ -175,7 +183,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       {isRecording && (
         <div className="mt-2 flex items-center space-x-2" style={{ color: '#FF0000' }}>
           <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#FF0000' }}></div>
-          <span className="text-sm">Recording...</span>
+          <span className="text-sm">{t('input.recording')}</span>
         </div>
       )}
     </div>

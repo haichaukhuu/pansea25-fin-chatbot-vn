@@ -1,10 +1,13 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface TypingIndicatorProps {
   className?: string;
 }
 
 export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ className = '' }) => {
+  const { t } = useLanguage();
+  
   return (
     <div className={`flex ${className}`}>
       {/* Avatar */}
@@ -56,7 +59,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ className = ''
               }}
             />
           </div>
-          <span className="text-sm ml-2" style={{ color: '#B4B4B2' }}>AI đang trả lời...</span>
+          <span className="text-sm ml-2" style={{ color: '#B4B4B2' }}>{t('chat.ai_responding')}</span>
         </div>
       </div>
     </div>

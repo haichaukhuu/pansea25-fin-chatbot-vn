@@ -8,7 +8,7 @@ export type Language = 'vi' | 'en';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
   formatDate: (date: Date, formatType?: 'short' | 'long' | 'relative') => string;
   formatTime: (date: Date) => string;
 }
@@ -65,7 +65,19 @@ const translations = {
     'profile.delete_account_desc': 'Xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan.',
     'profile.avatar_hint': 'JPG, GIF hoặc PNG. Kích thước tối đa 1MB.',
     'date.today': 'Hôm nay',
-    'date.yesterday': 'Hôm qua'
+    'date.yesterday': 'Hôm qua',
+    'api.error': 'Đã xảy ra lỗi, vui lòng thử lại sau.',
+    'api.streaming_error': 'Xin lỗi, tôi đã gặp lỗi. Vui lòng thử lại.',
+    'api.connection_error': 'Xin lỗi, tôi đã gặp lỗi khi xử lý tin nhắn của bạn. Vui lòng thử nhập lại tin nhắn.',
+    'api.mock_error': 'Đã xảy ra lỗi',
+    'input.placeholder_normal': 'Nhập tin nhắn của bạn...',
+    'input.placeholder_generating': 'AI đang tạo phản hồi...',
+    'input.speech_not_supported': 'Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói.',
+    'input.send_message': 'Gửi tin nhắn',
+    'input.stop_generation': 'Dừng tạo nội dung',
+    'input.recording': 'Đang ghi âm...',
+    'chat.typing': 'Đang nhập...',
+    'chat.ai_responding': 'AI đang trả lời...'
   },
   en: {
     'welcome.title': 'Welcome to Financial Chatbot',
@@ -115,15 +127,36 @@ const translations = {
     'profile.delete_account_desc': 'Permanently delete your account and all associated data.',
     'profile.avatar_hint': 'JPG, GIF or PNG. Max size 1MB.',
     'date.today': 'Today',
-    'date.yesterday': 'Yesterday'
+    'date.yesterday': 'Yesterday',
+    'api.error': 'An error occurred, please try again later.',
+    'api.streaming_error': 'Sorry, I encountered an error. Please try again.',
+    'api.connection_error': 'Sorry, I encountered an error while processing your message. Please try again.',
+    'api.mock_error': 'An error occurred',
+    'input.placeholder_normal': 'Type your message...',
+    'input.placeholder_generating': 'AI is generating response...',
+    'input.speech_not_supported': 'Speech recognition is not supported in your browser.',
+    'input.send_message': 'Send message',
+    'input.stop_generation': 'Stop generation',
+    'input.recording': 'Recording...',
+    'chat.typing': 'Typing...',
+    'chat.ai_responding': 'AI is responding...'
   }
 };
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('vi');
 
-  const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations[typeof language]] || key;
+  const t = (key: string, params?: Record<string, string>): string => {
+    let message = translations[language][key as keyof typeof translations[typeof language]] || key;
+    
+    // Replace parameters in the message
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        message = message.replace(`{${key}}`, value);
+      });
+    }
+    
+    return message;
   };
 
   const formatDate = (date: Date, formatType: 'short' | 'long' | 'relative' = 'short'): string => {
