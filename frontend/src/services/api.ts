@@ -67,6 +67,7 @@ export interface ApiResponse<T = any> {
 
 class ApiService {
   private baseUrl: string;
+  private abortController: AbortController | null = null;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
@@ -126,6 +127,9 @@ class ApiService {
   ): Promise<void> {
     const url = `${this.baseUrl}/chat/stream`;
     
+    // Create a new abort controller for this request
+    this.abortController = new AbortController();
+    
     // Get auth token from localStorage if it exists
     const token = localStorage.getItem('authToken');
     
@@ -137,6 +141,7 @@ class ApiService {
           ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(request),
+        signal: this.abortController.signal,
       });
 
       if (!response.ok) {
@@ -184,8 +189,24 @@ class ApiService {
       
       onComplete();
     } catch (error) {
-      console.error('Streaming request failed:', error);
-      onError(error instanceof Error ? error : new Error(String(error)));
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was aborted by user
+        console.log('Streaming request was stopped by user');
+        onComplete(); // Treat abort as completion
+      } else {
+        console.error('Streaming request failed:', error);
+        onError(error instanceof Error ? error : new Error(String(error)));
+      }
+    } finally {
+      this.abortController = null;
+    }
+  }
+
+  // Stop the current streaming request
+  stopStreaming(): void {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
     }
   }
 
