@@ -90,7 +90,7 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.sender === 'user';
-  const { formatTime } = useLanguage();
+  const { formatTime, t } = useLanguage();
   
   // Add cursor effect for streaming messages
   const displayContent = message.isStreaming 
@@ -163,7 +163,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         <div className={`mt-1 text-xs ${isUser ? 'text-right' : 'text-left'}`} style={{ color: '#B4B4B2' }}>
           {formatTime(message.timestamp)}
           {message.isStreaming && (
-            <span className="ml-2 text-xs" style={{ color: '#21A691' }}>Đang nhập...</span>
+            <span className="ml-2 text-xs" style={{ color: '#21A691' }}>{t('chat.typing')}</span>
           )}
         </div>
       </div>
