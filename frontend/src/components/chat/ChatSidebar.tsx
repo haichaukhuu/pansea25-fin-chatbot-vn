@@ -91,19 +91,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     onClick={handleNewChat}
                     className="p-2 rounded-lg transition-colors"
                     style={{ 
-                      backgroundColor: '#87DF2C',
+                      backgroundColor: '#FFFFFF',
                       color: '#000000',
                       boxShadow: 'none'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#7BC628';
-                      e.currentTarget.style.color = '#000000';
+                      e.currentTarget.style.backgroundColor = '#21A691';
+                      e.currentTarget.style.color = '#FFFFFF';
 
                       const icon = e.currentTarget.querySelector('svg');
-                      if (icon) icon.style.color = '#000000';
+                      if (icon) icon.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#87DF2C';
+                      e.currentTarget.style.backgroundColor = '#FFFFFF';
                       e.currentTarget.style.color = '#000000';
 
                       const icon = e.currentTarget.querySelector('svg');
@@ -245,18 +245,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 e.currentTarget.style.borderColor = '#21A691';
               }}
             >
-              {user?.avatar ? (
-                <img 
-                  src={user.avatar} 
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full object-cover border-2"
-                  style={{ borderColor: '#21A691' }}
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#21A691' }}>
-                  <UserCircleIcon className="h-6 w-6" style={{ color: '#FFFFFF' }} />
-                </div>
-              )}
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#21A691' }}>
+                <UserCircleIcon className="h-6 w-6" style={{ color: '#FFFFFF' }} />
+              </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-medium">{user?.name}</p>
                 <p className="text-xs opacity-75">{user?.email}</p>

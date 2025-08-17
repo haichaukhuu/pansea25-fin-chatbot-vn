@@ -7,7 +7,7 @@ import {
 import { useChat } from '../../context/ChatContext';
 
 interface MessageInputProps {
-  onSendMessage: (message: string, useStreaming?: boolean) => Promise<void>;
+  onSendMessage: (message: string) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -20,7 +20,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
-      await onSendMessage(message.trim(), true); // Always use streaming
+      await onSendMessage(message.trim());
       setMessage('');
     }
   };
@@ -76,6 +76,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
 
   return (
     <div className="p-4 shadow-lg bg-white">
+
+
       <form 
         onSubmit={handleSubmit} 
         className="flex items-center w-full rounded-lg border-2"

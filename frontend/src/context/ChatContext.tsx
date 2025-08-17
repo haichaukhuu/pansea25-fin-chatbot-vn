@@ -15,11 +15,12 @@ interface ChatContextType {
   searchChats: (query: string) => Chat[];
   uploadFile: (file: File) => Promise<void>;
   deleteChat: (chatId: string) => void;
+  initializeForNewUser: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-// Demo data in Vietnamese
+// Demo data
 const DEMO_CHATS: Chat[] = [
   {
     id: '1',
@@ -29,14 +30,14 @@ const DEMO_CHATS: Chat[] = [
     messages: [
       {
         id: '1',
-        content: 'Xin chào! Bạn có thể giúp tôi với việc lập kế hoạch tài chính không?',
+        content: 'Xin chào! Bạn có thể giúp tôi lập kế hoạch tài chính không?',
         sender: 'user',
         timestamp: new Date(2025, 6, 30, 10, 0),
         chatId: '1'
       },
       {
         id: '2',
-        content: 'Tất nhiên! Tôi rất vui được giúp bạn với việc lập kế hoạch tài chính. Hãy bắt đầu với mục tiêu tài chính của bạn. Bạn đang muốn đạt được điều gì?',
+        content: 'Tất nhiên! Tôi rất vui được giúp bạn lập kế hoạch tài chính. Hãy bắt đầu với mục tiêu tài chính của bạn. Bạn muốn đạt được điều gì?',
         sender: 'bot',
         timestamp: new Date(2025, 6, 30, 10, 1),
         chatId: '1'
@@ -58,7 +59,7 @@ const DEMO_CHATS: Chat[] = [
       },
       {
         id: '4',
-        content: 'Đối với người mới bắt đầu, tôi khuyên bạn nên bắt đầu với các quỹ chỉ số đa dạng hóa, thiết lập quỹ khẩn cấp và hiểu rõ khả năng chấp nhận rủi ro của mình. Bạn có muốn tôi giải thích chi tiết về bất kỳ điều nào trong số này không?',
+        content: 'Đối với người mới bắt đầu, tôi khuyên bạn nên bắt đầu với quỹ chỉ số đa dạng hóa, thiết lập quỹ khẩn cấp và hiểu rõ mức độ chấp nhận rủi ro của mình. Bạn có muốn tôi giải thích chi tiết về bất kỳ điều nào trong số này không?',
         sender: 'bot',
         timestamp: new Date(2025, 6, 29, 14, 31),
         chatId: '2'
@@ -255,7 +256,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Add error message
             const errorMessage: Message = {
               id: Math.random().toString(36).substr(2, 9),
-              content: `Xin lỗi, tôi đã gặp lỗi: ${error.message}. Vui lòng thử lại.`,
+              content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
               sender: 'bot',
               timestamp: new Date(),
               chatId: currentChat.id
@@ -308,7 +309,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Fallback to error message if API fails
       const errorMessage: Message = {
         id: Math.random().toString(36).substr(2, 9),
-        content: 'Xin lỗi, tôi đã gặp lỗi khi xử lý tin nhắn của bạn. Vui lòng đảm bảo máy chủ backend đang chạy và thử lại.',
+        content: 'Sorry, I encountered an error while processing your message. Please make sure the backend server is running and try again.',
         sender: 'bot',
         timestamp: new Date(),
         chatId: currentChat.id
@@ -358,6 +359,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const initializeForNewUser = () => {
+    // Create a new chat for the user when they sign in
+    const newChat: Chat = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'Cuộc trò chuyện mới',
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    setChats([newChat]);
+    setCurrentChat(newChat);
+    setFiles([]);
+  };
+
   return (
     <ChatContext.Provider value={{
       chats,
@@ -370,7 +385,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       sendMessage,
       searchChats,
       uploadFile,
-      deleteChat
+      deleteChat,
+      initializeForNewUser
     }}>
       {children}
     </ChatContext.Provider>
