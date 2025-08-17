@@ -5,7 +5,6 @@ import { apiService } from '../services/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
-  loginWithGoogle: (googleUser: any) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
@@ -32,9 +31,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || result.user.email.split('@')[0],
-          avatar: result.user.photo_url,
-          provider: result.user.provider || 'email'
+          name: result.user.display_name || result.user.email.split('@')[0]
         };
         setAuthState({
           user,
@@ -56,9 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || email.split('@')[0],
-          avatar: result.user.photo_url,
-          provider: 'email'
+          name: result.user.display_name || email.split('@')[0]
         };
         
         // Store auth data
@@ -78,41 +73,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const loginWithGoogle = async (googleUser: any): Promise<boolean> => {
-    try {
-      const result = await apiService.loginWithGoogle({ 
-        id_token: googleUser.credential,
-        email: googleUser.email,
-        name: googleUser.name,
-        avatar: googleUser.picture
-      });
-      
-      if (result.success && result.user && result.access_token) {
-        const user: User = {
-          id: result.user.uid,
-          email: result.user.email,
-          name: result.user.display_name || googleUser.name,
-          avatar: result.user.photo_url || googleUser.picture,
-          provider: 'google'
-        };
-        
-        // Store auth data
-        localStorage.setItem('authToken', result.access_token);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        
-        setAuthState({
-          user,
-          isAuthenticated: true
-        });
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Google login error:', error);
-      return false;
-    }
-  };
-
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
       const result = await apiService.register({ 
@@ -125,8 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || name,
-          provider: 'email'
+          name: result.user.display_name || name
         };
         
         setAuthState({
@@ -141,7 +100,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
     }
   };
-  
   const logout = () => {
     // Clear stored auth data
     localStorage.removeItem('authToken');
@@ -157,7 +115,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider value={{
       ...authState,
       login,
-      loginWithGoogle,
       register,
       logout,
       checkAuthStatus

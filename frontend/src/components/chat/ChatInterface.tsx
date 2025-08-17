@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Bars3Icon,
   ArchiveBoxIcon
@@ -18,18 +18,11 @@ interface ChatInterfaceProps {
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onNavigateToProfile }) => {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
-  const { currentChat, sendMessage, chats, createNewChat } = useChat();
+  const { currentChat, sendMessage } = useChat();
   const { t } = useLanguage();
 
-  // Create a new chat when component mounts and there are no chats
-  useEffect(() => {
-    if (chats.length === 0) {
-      createNewChat();
-    }
-  }, [chats.length, createNewChat]);
-
-  const handleSendMessage = async (message: string, useStreaming?: boolean) => {
-    await sendMessage(message, useStreaming);
+  const handleSendMessage = async (message: string) => {
+    await sendMessage(message);
   };
 
   return (
