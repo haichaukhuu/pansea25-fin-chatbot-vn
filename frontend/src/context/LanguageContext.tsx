@@ -29,7 +29,6 @@ const translations = {
     'header.subtitle': 'Trợ lý AI tài chính cho nông dân',
     'profile.title': 'Hồ sơ người dùng',
     'login.title': 'Đăng nhập',
-    'login.or_continue_with': 'Hoặc tiếp tục với',
     'register.title': 'Đăng ký',
     'language.vietnamese': 'Tiếng Việt',
     'language.english': 'English',
@@ -65,7 +64,6 @@ const translations = {
     'profile.delete_account': 'Xóa tài khoản',
     'profile.delete_account_desc': 'Xóa vĩnh viễn tài khoản và toàn bộ dữ liệu liên quan.',
     'profile.avatar_hint': 'JPG, GIF hoặc PNG. Kích thước tối đa 1MB.',
-    'profile.google_account': 'Tài khoản Google',
     'date.today': 'Hôm nay',
     'date.yesterday': 'Hôm qua'
   },
@@ -81,7 +79,6 @@ const translations = {
     'header.subtitle': 'AI-powered financial assistant for ASEAN markets',
     'profile.title': 'User Profile',
     'login.title': 'Login',
-    'login.or_continue_with': 'Or continue with',
     'register.title': 'Register',
     'language.vietnamese': 'Tiếng Việt',
     'language.english': 'English',
@@ -117,7 +114,6 @@ const translations = {
     'profile.delete_account': 'Delete Account',
     'profile.delete_account_desc': 'Permanently delete your account and all associated data.',
     'profile.avatar_hint': 'JPG, GIF or PNG. Max size 1MB.',
-    'profile.google_account': 'Google Account',
     'date.today': 'Today',
     'date.yesterday': 'Yesterday'
   }
