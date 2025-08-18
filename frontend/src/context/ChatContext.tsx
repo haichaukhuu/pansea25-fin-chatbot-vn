@@ -206,7 +206,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const createNewChat = (): string => {
     const newChat: Chat = {
       id: Math.random().toString(36).substr(2, 9),
-      title: 'Cuộc trò chuyện mới',
+      title: t('chat.new_chat_title'),
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date()
@@ -586,7 +586,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Create demo chat and a new empty chat for the user when they sign in
     const newChat: Chat = {
       id: Math.random().toString(36).substr(2, 9),
-      title: 'Cuộc trò chuyện mới',
+      title: t('chat.new_chat_title'),
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date()
