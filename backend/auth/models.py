@@ -18,6 +18,9 @@ class UserLoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class GoogleAuthRequest(BaseModel):
+    id_token: str = Field(..., description="Google ID token from Firebase Auth")
+
 class RefreshTokenRequest(BaseModel):
     uid: str  # Changed from refresh_token to uid since we're using custom tokens
 
