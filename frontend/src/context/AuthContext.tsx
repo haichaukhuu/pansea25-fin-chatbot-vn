@@ -6,6 +6,7 @@ import { apiService } from '../services/api';
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
+  googleSignIn: (idToken: string) => Promise<boolean>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
 }
@@ -100,6 +101,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
     }
   };
+
+  const googleSignIn = async (idToken: string): Promise<boolean> => {
+    try {
+      const result = await apiService.googleSignIn({ id_token: idToken });
+      
+      if (result.success && result.user && result.access_token) {
+        const user: User = {
+          id: result.user.uid,
+          email: result.user.email,
+          name: result.user.display_name || result.user.email.split('@')[0]
+        };
+        
+        // Store auth data
+        localStorage.setItem('authToken', result.access_token);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        setAuthState({
+          user,
+          isAuthenticated: true
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      return false;
+    }
+  };
   const logout = () => {
     // Clear stored auth data
     localStorage.removeItem('authToken');
@@ -116,6 +145,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ...authState,
       login,
       register,
+      googleSignIn,
       logout,
       checkAuthStatus
     }}>
