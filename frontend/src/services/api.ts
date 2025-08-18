@@ -39,6 +39,10 @@ export interface RegisterRequest {
   display_name: string;
 }
 
+export interface GoogleAuthRequest {
+  id_token: string;
+}
+
 export interface AuthResponse {
   uid: string;
   email: string;
@@ -286,6 +290,22 @@ class ApiService {
       return { 
         success: false, 
         message: error.message || 'Failed to get current user' 
+      };
+    }
+  }
+
+  async googleSignIn(request: GoogleAuthRequest): Promise<ApiResponse<AuthResponse>> {
+    try {
+      const response = await this.request<AuthResponse>('/api/auth/google', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      });
+      return { success: true, user: response, access_token: response.id_token };
+    } catch (error: any) {
+      console.error('Google sign-in failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Google sign-in failed' 
       };
     }
   }
