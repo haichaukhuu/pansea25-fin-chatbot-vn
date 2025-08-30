@@ -9,6 +9,8 @@ interface AuthContextType extends AuthState {
   googleSignIn: (idToken: string) => Promise<boolean>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
+  completeOnboarding: () => void;
+  isNewUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +20,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user: null,
     isAuthenticated: false
   });
+  const [isNewUser, setIsNewUser] = useState(false);
 
   // Check if user is already authenticated on app load
   useEffect(() => {
@@ -29,19 +32,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (token) {
       const result = await apiService.verifyToken(token);
       if (result.success && result.user) {
+        // For token verification, if user has a valid token, they're an existing user
+        const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted') === 'true';
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || result.user.email.split('@')[0]
+          name: result.user.display_name || result.user.email.split('@')[0],
+          hasCompletedOnboarding: hasCompletedOnboarding // Use localStorage value for token verification
         };
         setAuthState({
           user,
           isAuthenticated: true
         });
+        
+        // Don't trigger onboarding for existing authenticated users
+        setIsNewUser(false);
       } else {
         // Token is invalid, clear it
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('onboardingCompleted');
+        localStorage.removeItem('userPreferences');
       }
     }
   };
@@ -51,20 +62,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const result = await apiService.login({ email, password });
       
       if (result.success && result.user && result.access_token) {
+        // For login, we assume the user is an existing user who has completed onboarding
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || email.split('@')[0]
+          name: result.user.display_name || email.split('@')[0],
+          hasCompletedOnboarding: true // Existing users have completed onboarding
         };
         
         // Store auth data
         localStorage.setItem('authToken', result.access_token);
         localStorage.setItem('currentUser', JSON.stringify(user));
+        // Ensure onboarding is marked as completed for existing users
+        localStorage.setItem('onboardingCompleted', 'true');
         
         setAuthState({
           user,
           isAuthenticated: true
         });
+        
+        // Existing users should not go through onboarding
+        setIsNewUser(false);
         return true;
       }
       return false;
@@ -86,13 +104,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || name
+          name: result.user.display_name || name,
+          hasCompletedOnboarding: false // New users haven't completed onboarding
         };
         
         setAuthState({
           user,
           isAuthenticated: true
         });
+        
+        // Set as new user for onboarding flow
+        setIsNewUser(true);
         return true;
       }
       return false;
@@ -107,10 +129,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const result = await apiService.googleSignIn({ id_token: idToken });
       
       if (result.success && result.user && result.access_token) {
+        // Check if this Google user has completed onboarding before
+        const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted') === 'true';
         const user: User = {
           id: result.user.uid,
           email: result.user.email,
-          name: result.user.display_name || result.user.email.split('@')[0]
+          name: result.user.display_name || result.user.email.split('@')[0],
+          hasCompletedOnboarding
         };
         
         // Store auth data
@@ -121,6 +146,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           user,
           isAuthenticated: true
         });
+        
+        // Only set as new user if they haven't completed onboarding
+        // This handles both new Google users and returning Google users
+        setIsNewUser(!hasCompletedOnboarding);
+        
         return true;
       }
       return false;
@@ -129,15 +159,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
     }
   };
+
+  const completeOnboarding = () => {
+    if (authState.user) {
+      const updatedUser: User = {
+        ...authState.user,
+        hasCompletedOnboarding: true
+      };
+      
+      setAuthState({
+        user: updatedUser,
+        isAuthenticated: true
+      });
+      
+      setIsNewUser(false);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    }
+  };
   const logout = () => {
     // Clear stored auth data
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('onboardingCompleted');
+    localStorage.removeItem('userPreferences');
     
     setAuthState({
       user: null,
       isAuthenticated: false
     });
+    
+    setIsNewUser(false);
   };
 
   return (
@@ -147,7 +198,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       register,
       googleSignIn,
       logout,
-      checkAuthStatus
+      checkAuthStatus,
+      completeOnboarding,
+      isNewUser
     }}>
       {children}
     </AuthContext.Provider>
