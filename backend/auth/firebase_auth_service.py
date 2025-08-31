@@ -117,37 +117,7 @@ class FirebaseAuthService:
             logger.error(f"Login error: {e}")
             raise HTTPException(status_code=500, detail="Login failed")
     
-    async def google_sign_in(self, id_token: str) -> Dict[str, Any]:
-        """Authenticate user with Google ID token from Firebase client SDK"""
-        if not self.admin_auth:
-            raise HTTPException(status_code=503, detail="Firebase authentication service not available")
-        
-        try:
-            # Verify the Google ID token using Firebase Admin SDK
-            decoded_token = self.admin_auth.verify_id_token(id_token)
-            uid = decoded_token['uid']
-            
-            # Get user record for complete information
-            user_record = self.admin_auth.get_user(uid)
-            
-            return {
-                "uid": user_record.uid,
-                "email": user_record.email,
-                "display_name": user_record.display_name,
-                "email_verified": user_record.email_verified,
-                "id_token": id_token,  # Return the same token that was verified
-                "refresh_token": "",   # Client should handle refresh token
-                "expires_in": "3600"   # Standard 1 hour expiration
-            }
-            
-        except Exception as e:
-            logger.error(f"Google sign-in error: {e}")
-            if "expired" in str(e).lower():
-                raise HTTPException(status_code=401, detail="Token has expired")
-            elif "invalid" in str(e).lower():
-                raise HTTPException(status_code=401, detail="Invalid token")
-            else:
-                raise HTTPException(status_code=401, detail="Google authentication failed")
+
     
     async def verify_id_token(self, id_token: str) -> Dict[str, Any]:
         """Verify Firebase ID token"""
