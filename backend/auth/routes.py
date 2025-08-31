@@ -4,7 +4,7 @@ from typing import Dict, Any
 import logging
 
 from .models import (
-    UserRegisterRequest, UserLoginRequest, GoogleAuthRequest, RefreshTokenRequest,
+    UserRegisterRequest, UserLoginRequest, RefreshTokenRequest,
     PasswordResetRequest, UpdateUserRequest, SetCustomClaimsRequest,
     AuthResponse, LoginResponse, UserResponse, TokenResponse, MessageResponse,
     TokenVerificationResponse, ErrorResponse, PasswordResetResponse
@@ -71,23 +71,7 @@ async def login(user_data: UserLoginRequest):
             detail="Login failed"
         )
 
-@auth_router.post("/google", response_model=LoginResponse)
-async def google_sign_in(auth_data: GoogleAuthRequest):
-    """
-    Authenticate user with Google ID token from Firebase client SDK
-    Returns user information with the same ID token
-    """
-    try:
-        auth_info = await firebase_auth_service.google_sign_in(auth_data.id_token)
-        return LoginResponse(**auth_info)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Google sign-in error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Google authentication failed"
-        )
+
 
 @auth_router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(token_data: RefreshTokenRequest):

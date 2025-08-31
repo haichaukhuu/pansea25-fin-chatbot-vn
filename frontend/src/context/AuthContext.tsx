@@ -6,7 +6,6 @@ import { apiService } from '../services/api';
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
-  googleSignIn: (idToken: string) => Promise<boolean>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
   completeOnboarding: () => void;
@@ -124,42 +123,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const googleSignIn = async (idToken: string): Promise<boolean> => {
-    try {
-      const result = await apiService.googleSignIn({ id_token: idToken });
-      
-      if (result.success && result.user && result.access_token) {
-        // Check if this Google user has completed onboarding before
-        const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted') === 'true';
-        const user: User = {
-          id: result.user.uid,
-          email: result.user.email,
-          name: result.user.display_name || result.user.email.split('@')[0],
-          hasCompletedOnboarding
-        };
-        
-        // Store auth data
-        localStorage.setItem('authToken', result.access_token);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        
-        setAuthState({
-          user,
-          isAuthenticated: true
-        });
-        
-        // Only set as new user if they haven't completed onboarding
-        // This handles both new Google users and returning Google users
-        setIsNewUser(!hasCompletedOnboarding);
-        
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      return false;
-    }
-  };
-
   const completeOnboarding = () => {
     if (authState.user) {
       const updatedUser: User = {
@@ -196,7 +159,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ...authState,
       login,
       register,
-      googleSignIn,
       logout,
       checkAuthStatus,
       completeOnboarding,
