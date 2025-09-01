@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import LanguageSelector from '../common/LanguageSelector';
-import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -14,7 +13,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, googleSignIn } = useAuth();
+  const { login } = useAuth();
   const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,29 +33,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleSignIn = async (idToken: string, _user: any) => {
-    setError('');
-    setLoading(true);
-
-    try {
-      const success = await googleSignIn(idToken);
-      if (success) {
-        onSuccess();
-      } else {
-        setError('Google sign-in failed. Please try again.');
-      }
-    } catch (err) {
-      setError('An error occurred during Google sign-in');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignInError = (error: string) => {
-    setError(error);
-    setLoading(false);
   };
 
   return (
@@ -199,23 +175,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             >
               {loading ? t('profile.signing_in') : t('profile.sign_in')}
             </button>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-black">{t('common.or')}</span>
-            </div>
-          </div>
-
-          <div>
-            <GoogleSignInButton
-              onSuccess={handleGoogleSignIn}
-              onError={handleGoogleSignInError}
-              disabled={loading}
-            />
           </div>
 
           <div className="text-center">
