@@ -1,4 +1,7 @@
 import React, { useState, useRef } from 'react';
+import { TranscriptionService } from '../../services/transcriptionService';
+import type { TranscriptionResult } from '../../services/transcriptionService';
+import { TranscriptionConfirmation } from './TranscriptionConfirmation';
 import { 
   PaperAirplaneIcon,
   PaperClipIcon,
@@ -16,9 +19,12 @@ interface MessageInputProps {
 export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled = false }) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const transcriptionServiceRef = useRef<TranscriptionService | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isStreaming, stopGeneration } = useChat();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,36 +51,36 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   };
 
   const handleVoiceInput = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setMessage(prev => prev + transcript);
-        setIsRecording(false);
-      };
-
-      recognition.onerror = () => {
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognition.start();
-    } else {
-      alert(t('input.speech_not_supported'));
+    if (isRecording) {
+      transcriptionServiceRef.current?.stopRecording();
+      setIsRecording(false);
+      return;
     }
+
+    // Get the appropriate language code for transcription
+    const languageCode = TranscriptionService.getLanguageCode(language);
+    
+    transcriptionServiceRef.current = new TranscriptionService(
+      (result) => {
+        setTranscriptionResult(result);
+        setShowConfirmation(true);
+        setIsRecording(false);
+      },
+      (error) => {
+        alert('Transcription error: ' + error);
+        setIsRecording(false);
+      },
+      (status) => {
+        setIsRecording(status === 'recording');
+      }
+    );
+    
+    // Start recording with the appropriate language
+    transcriptionServiceRef.current.startRecording({
+      language_code: languageCode,
+      sample_rate: 16000,
+      enable_partial_results: true
+    });
   };
 
   return (
@@ -115,10 +121,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           onMouseLeave={(e) => {
             if (!isRecording) e.currentTarget.style.color = '#21A691';
           }}
-          title="Voice input"
+          title={isRecording ? 'Stop recording' : 'Voice input'}
           disabled={disabled || isStreaming}
         >
-          <MicrophoneIcon className="h-5 w-5" />
+          {isRecording ? <StopIcon className="h-5 w-5" /> : <MicrophoneIcon className="h-5 w-5" />}
         </button>
 
         {/* Message input */}
@@ -183,9 +189,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       {isRecording && (
         <div className="mt-2 flex items-center space-x-2" style={{ color: '#FF0000' }}>
           <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#FF0000' }}></div>
-          <span className="text-sm">{t('input.recording')}</span>
+          <span className="text-sm">Recording...</span>
         </div>
       )}
+
+      {/* Transcription confirmation dialog */}
+      <TranscriptionConfirmation
+        transcript={transcriptionResult?.transcript || ''}
+        confidence={transcriptionResult?.confidence}
+        isVisible={showConfirmation}
+        onConfirm={(finalText) => {
+          setMessage(finalText);
+          setShowConfirmation(false);
+          setTranscriptionResult(null);
+        }}
+        onCancel={() => {
+          setShowConfirmation(false);
+          setTranscriptionResult(null);
+        }}
+      />
     </div>
   );
 };

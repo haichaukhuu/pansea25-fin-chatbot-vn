@@ -80,6 +80,15 @@ const translations = {
     'input.recording': 'Đang ghi âm...',
     'chat.typing': 'Đang nhập...',
     'chat.ai_responding': 'AI đang trả lời...',
+    // Transcription translations
+    'transcription.result_title': 'Kết quả phiên âm',
+    'transcription.confidence': 'Độ tin cậy:',
+    'transcription.transcribed_text': 'Văn bản đã phiên âm:',
+    'transcription.click_to_edit': 'Nhấp để chỉnh sửa',
+    'transcription.no_text': 'Không có phiên âm nào',
+    'transcription.cancel': 'Hủy',
+    'transcription.confirm_send': 'Xác nhận & Gửi',
+    'transcription.edit_help': 'Bạn có thể chỉnh sửa văn bản đã phiên âm trước khi gửi tới chatbot',
     // Onboarding translations
     'onboarding.welcome.title': 'Chào mừng đến với Chatbot Tài chính PANSEA',
     'onboarding.welcome.subtitle': 'Trợ lý AI tài chính dành cho nông dân Việt Nam',
@@ -171,6 +180,15 @@ const translations = {
     'input.recording': 'Recording...',
     'chat.typing': 'Typing...',
     'chat.ai_responding': 'AI is responding...',
+    // Transcription translations
+    'transcription.result_title': 'Transcription Result',
+    'transcription.confidence': 'Confidence:',
+    'transcription.transcribed_text': 'Transcribed Text:',
+    'transcription.click_to_edit': 'Click to edit',
+    'transcription.no_text': 'No transcription available',
+    'transcription.cancel': 'Cancel',
+    'transcription.confirm_send': 'Confirm & Send',
+    'transcription.edit_help': 'You can edit the transcribed text before sending it to the chatbot',
     // Onboarding translations
     'onboarding.welcome.title': 'Welcome to PANSEA Financial Chatbot',
     'onboarding.welcome.subtitle': 'AI-powered financial assistant for Vietnamese farmers',

@@ -21,6 +21,9 @@ from ai_models.model_manager import ModelManager
 # Import Firebase authentication components
 from auth import auth_router, firebase_config
 
+# Import transcription components
+from transcription.routes import router as transcription_router
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -54,6 +57,9 @@ async def startup_event():
 
 # Include authentication router
 app.include_router(auth_router, prefix="/api")
+
+# Include transcription router
+app.include_router(transcription_router)
 
 # Security
 security = HTTPBearer()
