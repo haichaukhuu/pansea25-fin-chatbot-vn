@@ -31,9 +31,16 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
             results = transcript_event.transcript.results
             for result in results:
                 for alt in result.alternatives:
+                    # Calculate average confidence from items
+                    confidence = None
+                    if hasattr(alt, 'items') and alt.items:
+                        confidence_scores = [item.confidence for item in alt.items if hasattr(item, 'confidence') and item.confidence is not None]
+                        if confidence_scores:
+                            confidence = sum(confidence_scores) / len(confidence_scores)
+                    
                     transcription_result = TranscriptionResult(
                         transcript=alt.transcript,
-                        confidence=alt.confidence,
+                        confidence=confidence,
                         is_partial=result.is_partial,
                         start_time=result.start_time if hasattr(result, 'start_time') else None,
                         end_time=result.end_time if hasattr(result, 'end_time') else None,
@@ -44,7 +51,7 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
                         await self.callback(transcription_result)
                         
         except Exception as e:
-            logger.error(f"Error handling transcript event: {e}")
+            logger.error(f"Error handling transcript event: {e}") 
             if self.callback:
                 await self.callback(None, error=str(e))
 
@@ -126,26 +133,63 @@ class TranscriptionService:
             # Create async generator for results
             async def result_generator():
                 try:
+                    result_queue = asyncio.Queue()
+                    
                     async def handle_result(result: TranscriptionResult, error: str = None):
                         if error:
-                            yield TranscriptionResponse(
+                            response = TranscriptionResponse(
                                 status=TranscriptionStatus.ERROR,
                                 error_message=error,
                                 session_id=session_id
                             )
                         else:
                             status = TranscriptionStatus.PARTIAL if result.is_partial else TranscriptionStatus.COMPLETED
-                            yield TranscriptionResponse(
+                            response = TranscriptionResponse(
                                 status=status,
                                 result=result,
                                 session_id=session_id
                             )
+                        await result_queue.put(response)
                     
                     # Set up event handler
                     handler = TranscribeEventHandler(stream.output_stream, handle_result)
                     
-                    # Start handling events
-                    await handler.handle_events()
+                    # Start handling events in background task
+                    event_handler_task = asyncio.create_task(handler.handle_events())
+                    
+                    try:
+                        while True:
+                            # Wait for results with timeout to allow checking if handler is done
+                            try:
+                                response = await asyncio.wait_for(result_queue.get(), timeout=0.1)
+                                yield response
+                                
+                                # If this is an error response, break the loop
+                                if response.status == TranscriptionStatus.ERROR:
+                                    break
+                                    
+                            except asyncio.TimeoutError:
+                                # Check if the event handler task is done
+                                if event_handler_task.done():
+                                    # Process any remaining items in queue
+                                    while not result_queue.empty():
+                                        response = await result_queue.get()
+                                        yield response
+                                    break
+                                continue
+                                
+                    except asyncio.CancelledError:
+                        logger.info(f"Result generator cancelled for session {session_id}")
+                        event_handler_task.cancel()
+                        return
+                    finally:
+                        # Ensure the event handler task is cancelled
+                        if not event_handler_task.done():
+                            event_handler_task.cancel()
+                            try:
+                                await event_handler_task
+                            except asyncio.CancelledError:
+                                pass
                     
                 except Exception as e:
                     logger.error(f"Error in transcription session {session_id}: {e}")
