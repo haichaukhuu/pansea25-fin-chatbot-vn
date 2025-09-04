@@ -25,6 +25,14 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
   const [isEditing, setIsEditing] = useState(false);
   const { t } = useLanguage();
 
+  // Reset state when transcript changes or component becomes visible
+  React.useEffect(() => {
+    if (isVisible) {
+      setEditedText(transcript);
+      setIsEditing(false);
+    }
+  }, [transcript, isVisible]);
+
   if (!isVisible) return null;
 
   const handleConfirm = () => {
@@ -48,10 +56,43 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
       : '#ef4444';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed bottom-4 right-4 z-50 max-w-md w-full mx-4 sm:mx-0"
+      style={{
+        animation: 'slideInFromBottom 0.3s ease-out'
+      }}
+    >
+      <style>
+        {`
+          @keyframes slideInFromBottom {
+            from {
+              transform: translateY(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          
+          @media (max-width: 640px) {
+            .transcription-dialog {
+              bottom: 1rem;
+              right: 1rem;
+              left: 1rem;
+              right: 1rem;
+              max-width: none;
+            }
+          }
+        `}
+      </style>
       <div 
-        className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
-        style={{ backgroundColor: '#FFFFFF' }}
+        className="bg-white rounded-lg p-6 shadow-2xl border-2 transcription-dialog"
+        style={{ 
+          backgroundColor: '#FFFFFF',
+          borderColor: '#21A691',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(33, 166, 145, 0.1)'
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -61,19 +102,29 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
           >
             {t('transcription.result_title')}
           </h3>
-          {confidence && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm" style={{ color: '#666666' }}>
-                {t('transcription.confidence')}
-              </span>
-              <span 
-                className="text-sm font-medium"
-                style={{ color: confidenceColor }}
-              >
-                {Math.round(confidence * 100)}%
-              </span>
-            </div>
-          )}
+          <div className="flex items-center space-x-3">
+            {confidence && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm" style={{ color: '#666666' }}>
+                  {t('transcription.confidence')}
+                </span>
+                <span 
+                  className="text-sm font-medium"
+                  style={{ color: confidenceColor }}
+                >
+                  {Math.round(confidence * 100)}%
+                </span>
+              </div>
+            )}
+            <button
+              onClick={handleCancel}
+              className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+              style={{ color: '#666666' }}
+              title={t('transcription.cancel')}
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Transcription Content */}
@@ -123,7 +174,7 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
         <div className="flex space-x-3">
           <button
             onClick={handleCancel}
-            className="flex-1 flex items-center justify-center space-x-2 py-2 px-4 rounded-lg border-2 transition-colors"
+            className="flex items-center justify-center space-x-2 py-2 px-4 rounded-lg border-2 transition-colors"
             style={{
               borderColor: '#E5E5E5',
               backgroundColor: '#FFFFFF',
@@ -136,7 +187,6 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
               e.currentTarget.style.backgroundColor = '#FFFFFF';
             }}
           >
-            <XMarkIcon className="h-5 w-5" />
             <span>{t('transcription.cancel')}</span>
           </button>
 

@@ -24,12 +24,27 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
     def __init__(self, output_stream, callback=None):
         super().__init__(output_stream)
         self.callback = callback
+        self._shutdown = False
+        
+    def shutdown(self):
+        """Signal the handler to shutdown gracefully"""
+        self._shutdown = True
         
     async def handle_transcript_event(self, transcript_event: TranscriptEvent):
         """Handle transcript events from Amazon Transcribe"""
+        # Check if handler is being shutdown to prevent processing cancelled futures
+        if self._shutdown:
+            logger.debug("Event handler is shutting down, skipping transcript event")
+            return
+            
         try:
             results = transcript_event.transcript.results
             for result in results:
+                # Check again in case shutdown happened during processing
+                if self._shutdown:
+                    logger.debug("Event handler shutdown during processing, stopping")
+                    return
+                    
                 for alt in result.alternatives:
                     # Calculate average confidence from items
                     confidence = None
@@ -47,13 +62,28 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
                         alternatives=[item.transcript for item in result.alternatives[1:]] if len(result.alternatives) > 1 else []
                     )
                     
-                    if self.callback:
-                        await self.callback(transcription_result)
+                    # Check callback and shutdown state before calling
+                    if self.callback and not self._shutdown:
+                        try:
+                            await self.callback(transcription_result)
+                        except asyncio.CancelledError:
+                            logger.debug("Callback was cancelled, handler shutting down")
+                            self._shutdown = True
+                            return
+                        except Exception as callback_error:
+                            logger.error(f"Error in callback: {callback_error}")
                         
+        except asyncio.CancelledError:
+            logger.debug("Event handling was cancelled")
+            self._shutdown = True
         except Exception as e:
-            logger.error(f"Error handling transcript event: {e}") 
-            if self.callback:
-                await self.callback(None, error=str(e))
+            if not self._shutdown:
+                logger.error(f"Error handling transcript event: {e}") 
+                if self.callback:
+                    try:
+                        await self.callback(None, error=str(e))
+                    except (asyncio.CancelledError, Exception) as callback_error:
+                        logger.debug(f"Could not send error callback: {callback_error}")
 
 
 class TranscriptionService:
@@ -63,6 +93,7 @@ class TranscriptionService:
         self.region = os.getenv('AWS_REGION', 'us-west-2')
         self.client = None
         self.active_sessions = {}
+        self._shutdown_event = None
         
     def _validate_aws_credentials(self) -> bool:
         """Validate AWS credentials"""
@@ -90,6 +121,10 @@ class TranscriptionService:
                 return False
                 
             self.client = TranscribeStreamingClient(region=self.region)
+           
+            if self._shutdown_event is None:
+                self._shutdown_event = asyncio.Event()
+                
             logger.info(f"Transcription service initialized for region: {self.region}")
             return True
             
@@ -99,7 +134,7 @@ class TranscriptionService:
     
     async def start_transcription_session(
         self, 
-        language_code: str = "en-US",
+        language_code: str = "vi-VN",  # Default to Vietnamese as per spec
         sample_rate: int = 16000,
         enable_partial_results: bool = True
     ) -> tuple[str, AsyncGenerator]:
@@ -110,9 +145,16 @@ class TranscriptionService:
         if not self.client:
             raise Exception("Failed to initialize Transcribe client")
         
+        # Clean up any existing sessions first
+        if self.active_sessions:
+            logger.warning(f"Found {len(self.active_sessions)} existing sessions, cleaning up...")
+            await self.cleanup_all_sessions()
+        
         session_id = str(uuid.uuid4())
         
         try:
+            logger.info(f"Starting new transcription session {session_id} with language {language_code}")
+            
             # Start transcription stream
             stream = await self.client.start_stream_transcription(
                 language_code=language_code,
@@ -125,17 +167,26 @@ class TranscriptionService:
             # Store session
             self.active_sessions[session_id] = {
                 'stream': stream,
-                'status': TranscriptionStatus.STARTED
+                'status': TranscriptionStatus.STARTED,
+                'created_at': asyncio.get_event_loop().time()
             }
             
             logger.info(f"Started transcription session: {session_id}")
             
             # Create async generator for results
             async def result_generator():
+                event_handler_task = None
+                handler = None
+                
                 try:
                     result_queue = asyncio.Queue()
                     
                     async def handle_result(result: TranscriptionResult, error: str = None):
+                        # Check if session is still active before processing results
+                        if session_id not in self.active_sessions:
+                            logger.warning(f"Received result for inactive session {session_id}, ignoring")
+                            return
+                            
                         if error:
                             response = TranscriptionResponse(
                                 status=TranscriptionStatus.ERROR,
@@ -149,16 +200,26 @@ class TranscriptionService:
                                 result=result,
                                 session_id=session_id
                             )
-                        await result_queue.put(response)
+                        
+                        # Use try_put to avoid blocking on cancelled queues
+                        try:
+                            await result_queue.put(response)
+                        except asyncio.CancelledError:
+                            logger.debug(f"Result queue put cancelled for session {session_id}")
                     
-                    # Set up event handler
+                    # Set up event handler with shutdown capability
                     handler = TranscribeEventHandler(stream.output_stream, handle_result)
                     
                     # Start handling events in background task
                     event_handler_task = asyncio.create_task(handler.handle_events())
                     
                     try:
-                        while True:
+                        while session_id in self.active_sessions:  # Check if session still exists
+                            # Check for shutdown event
+                            if self._shutdown_event and self._shutdown_event.is_set():
+                                logger.info(f"Service shutdown requested, stopping result generator for {session_id}")
+                                break
+                                
                             # Wait for results with timeout to allow checking if handler is done
                             try:
                                 response = await asyncio.wait_for(result_queue.get(), timeout=0.1)
@@ -173,23 +234,17 @@ class TranscriptionService:
                                 if event_handler_task.done():
                                     # Process any remaining items in queue
                                     while not result_queue.empty():
-                                        response = await result_queue.get()
-                                        yield response
+                                        try:
+                                            response = await asyncio.wait_for(result_queue.get(), timeout=0.01)
+                                            yield response
+                                        except asyncio.TimeoutError:
+                                            break
                                     break
                                 continue
                                 
                     except asyncio.CancelledError:
                         logger.info(f"Result generator cancelled for session {session_id}")
-                        event_handler_task.cancel()
                         return
-                    finally:
-                        # Ensure the event handler task is cancelled
-                        if not event_handler_task.done():
-                            event_handler_task.cancel()
-                            try:
-                                await event_handler_task
-                            except asyncio.CancelledError:
-                                pass
                     
                 except Exception as e:
                     logger.error(f"Error in transcription session {session_id}: {e}")
@@ -199,14 +254,34 @@ class TranscriptionService:
                         session_id=session_id
                     )
                 finally:
+                    logger.info(f"Starting cleanup for session {session_id}")
+                    
+                    # Signal handler to shutdown gracefully
+                    if handler:
+                        handler.shutdown()
+                        # Give it a moment to process the shutdown signal
+                        await asyncio.sleep(0.1)
+                    
+                    # Cancel and wait for event handler task
+                    if event_handler_task and not event_handler_task.done():
+                        event_handler_task.cancel()
+                        try:
+                            await asyncio.wait_for(event_handler_task, timeout=2.0)
+                        except (asyncio.CancelledError, asyncio.TimeoutError):
+                            logger.debug(f"Event handler task cleanup completed for session {session_id}")
+                    
                     # Clean up session
                     if session_id in self.active_sessions:
                         del self.active_sessions[session_id]
+                        logger.info(f"Cleaned up session {session_id} from result generator")
             
             return session_id, result_generator()
             
         except Exception as e:
             logger.error(f"Failed to start transcription session: {e}")
+            # Clean up on failure
+            if session_id in self.active_sessions:
+                del self.active_sessions[session_id]
             raise
     
     async def send_audio_chunk(self, session_id: str, audio_data: bytes):
@@ -263,8 +338,29 @@ class TranscriptionService:
             session = self.active_sessions[session_id]
             stream = session['stream']
             
-            # End the input stream
-            await stream.input_stream.end_stream()
+            logger.info(f"Ending transcription session: {session_id}")
+            
+            # Add delay before ending stream to prevent race conditions
+            await asyncio.sleep(0.05)  # 50ms delay to let in-flight requests complete
+            
+            # End the input stream with timeout to prevent hanging
+            try:
+                await asyncio.wait_for(stream.input_stream.end_stream(), timeout=3.0)
+                logger.info(f"Successfully ended input stream for session {session_id}")
+            except asyncio.TimeoutError:
+                logger.warning(f"Timeout while ending input stream for session {session_id}")
+            except asyncio.CancelledError:
+                logger.info(f"Input stream already cancelled for session {session_id}")
+            except Exception as stream_error:
+                # Check if it's a future-related error and handle gracefully
+                error_msg = str(stream_error).lower()
+                if any(keyword in error_msg for keyword in ["invalidstateerror", "cancelled", "future", "closed"]):
+                    logger.info(f"Stream already terminated for session {session_id}: {stream_error}")
+                else:
+                    logger.error(f"Error ending input stream for session {session_id}: {stream_error}")
+            
+            # Additional delay after ending stream to let AWS cleanup complete
+            await asyncio.sleep(1)
             
             # Update status
             session['status'] = TranscriptionStatus.COMPLETED
@@ -274,21 +370,39 @@ class TranscriptionService:
         except Exception as e:
             logger.error(f"Error ending transcription session {session_id}: {e}")
         finally:
-            # Remove from active sessions
+            # Always remove from active sessions, even if there was an error
             if session_id in self.active_sessions:
                 del self.active_sessions[session_id]
-    
-    def get_session_status(self, session_id: str) -> Optional[TranscriptionStatus]:
-        """Get status of a transcription session"""
-        if session_id in self.active_sessions:
-            return self.active_sessions[session_id]['status']
-        return None
+                logger.info(f"Removed session {session_id} from active sessions")
     
     async def cleanup_all_sessions(self):
         """Clean up all active sessions"""
         session_ids = list(self.active_sessions.keys())
+        logger.info(f"Cleaning up {len(session_ids)} active sessions")
+        
+        # Signal shutdown to prevent new operations
+        if self._shutdown_event:
+            self._shutdown_event.set()
+        
+        # Give a moment for ongoing operations to see the shutdown signal
+        await asyncio.sleep(0.1)
+        
+        # Clean up sessions
+        cleanup_tasks = []
         for session_id in session_ids:
-            await self.end_transcription_session(session_id)
+            cleanup_tasks.append(self.end_transcription_session(session_id))
+        
+        if cleanup_tasks:
+            # Wait for all cleanup tasks with timeout
+            try:
+                await asyncio.wait_for(asyncio.gather(*cleanup_tasks, return_exceptions=True), timeout=10.0)
+            except asyncio.TimeoutError:
+                logger.warning("Cleanup tasks timed out, forcing completion")
+        
+        # Clear shutdown event for future sessions
+        if self._shutdown_event:
+            self._shutdown_event.clear()
+        logger.info("All sessions cleaned up")
 
 
 # Global transcription service instance

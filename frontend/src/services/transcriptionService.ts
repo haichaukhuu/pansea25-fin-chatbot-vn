@@ -24,7 +24,7 @@ export interface TranscriptionResult {
 }
 
 export interface TranscriptionResponse {
-  type: string;
+  type: 'session_started' | 'transcription_result' | 'session_ended' | 'error' | string;
   status?: string;
   result?: TranscriptionResult;
   error_message?: string;
@@ -38,28 +38,34 @@ export class TranscriptionService {
   private isRecording = false;
   private sessionId: string | null = null;
   private onTranscriptionResult: (result: TranscriptionResult) => void;
+  private onPartialResult: (result: TranscriptionResult) => void;
   private onError: (error: string) => void;
   private onStatusChange: (status: string) => void;
   private debugMode: boolean = false;
+  private silenceTimer: NodeJS.Timeout | null = null;
+  private shouldReconnect: boolean = false;
 
   // Audio processing configuration
-  private static readonly CHUNK_DURATION_MS = 100; // 100ms chunks (50-200ms recommended)
+  private static readonly CHUNK_DURATION_MS = 50; 
   private static readonly SAMPLE_RATE = 16000; // 16kHz sample rate
   private static readonly BYTES_PER_SAMPLE = 2; // 16-bit = 2 bytes
   private static readonly MAX_CHUNK_SIZE = 32 * 1024; // 32KB AWS limit
+  private static readonly SILENCE_TIMEOUT_MS = 5000; // 5 seconds silence timeout 
 
   // Supported languages for transcription
   static readonly SUPPORTED_LANGUAGES: LanguageConfig[] = [
-    { code: 'en-US', name: 'English (US)', country: 'US' },
-    { code: 'vi-VN', name: 'Vietnamese', country: 'VN' }
+    { code: 'vi-VN', name: 'Vietnamese', country: 'VN' },
+    { code: 'en-US', name: 'English (US)', country: 'US' }
   ];
 
   constructor(
     onTranscriptionResult: (result: TranscriptionResult) => void,
     onError: (error: string) => void,
-    onStatusChange: (status: string) => void
+    onStatusChange: (status: string) => void,
+    onPartialResult?: (result: TranscriptionResult) => void
   ) {
     this.onTranscriptionResult = onTranscriptionResult;
+    this.onPartialResult = onPartialResult || (() => {});
     this.onError = onError;
     this.onStatusChange = onStatusChange;
     
@@ -78,53 +84,98 @@ export class TranscriptionService {
   }
 
   async startRecording(config: TranscriptionConfig = {}) {
-    try {
-      // Get user media (microphone)
-      this.audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: config.sample_rate || 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        }
-      });
-
-      // Connect to WebSocket
-      const wsUrl = `ws://localhost:8000/api/transcription/stream`;
-      this.websocket = new WebSocket(wsUrl);
-
-      this.websocket.onopen = () => {
-        console.log('WebSocket connected');
-        // Send configuration
-        this.websocket?.send(JSON.stringify({
-          language_code: config.language_code || 'en-US',
-          sample_rate: config.sample_rate || 16000,
-          enable_partial_results: config.enable_partial_results !== false
-        }));
-      };
-
-      this.websocket.onmessage = (event) => {
-        const data: TranscriptionResponse = JSON.parse(event.data);
-        this.handleWebSocketMessage(data);
-      };
-
-      this.websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        this.onError('Connection error occurred');
-      };
-
-      this.websocket.onclose = () => {
-        console.log('WebSocket closed');
-        this.cleanup();
-      };
-
-      // Set up MediaRecorder for audio capture
-      this.setupMediaRecorder();
-
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      this.onError(`Failed to start recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Clean up any existing session before starting new session
+    if (this.isRecording || this.websocket || this.audioStream) {
+      console.log('Cleaning up previous session before starting new recording...');
+      this.stopRecording();
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
+
+    let retryCount = 0;
+    const maxRetries = 1; // Retry once 
+  // Enable reconnects for this recording session
+  this.shouldReconnect = true;
+    
+    const attemptConnection = async (): Promise<void> => {
+      try {
+        // Get user media (microphone)
+        this.audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            sampleRate: config.sample_rate || 16000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+          }
+        });
+
+        const wsUrl = `ws://localhost:8000/api/transcription/stream`;
+        this.websocket = new WebSocket(wsUrl);
+
+        this.websocket.onopen = () => {
+          console.log('WebSocket connected');
+          // Send configuration with Vietnamese as default
+          this.websocket?.send(JSON.stringify({
+            language_code: config.language_code || 'vi-VN',
+            sample_rate: config.sample_rate || 16000,
+            enable_partial_results: config.enable_partial_results !== false
+          }));
+        };
+
+        this.websocket.onmessage = (event) => {
+          const data: TranscriptionResponse = JSON.parse(event.data);
+          this.handleWebSocketMessage(data);
+        };
+
+        this.websocket.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          // attempt reconnects if didn't intentionally stop
+          if (this.shouldReconnect && this.isRecording && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying connection (${retryCount}/${maxRetries})...`);
+            setTimeout(() => attemptConnection(), 1000);
+          } else {
+            this.onError('Connection error occurred. Please check your network and try again.');
+          }
+        };
+
+        this.websocket.onclose = (event) => {
+          console.log('WebSocket closed:', event.code, event.reason);
+          
+          if (event.code === 1000) {
+            // Normal closure
+            console.log('WebSocket closed normally - no reconnection needed');
+            this.shouldReconnect = false;
+            this.cleanup();
+            return;
+          }
+          
+          // Only reconnect on unexpected closures while actively recording
+          if (this.shouldReconnect && this.isRecording && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Connection lost unexpectedly, retrying (${retryCount}/${maxRetries})...`);
+            setTimeout(() => attemptConnection(), 1000);
+          } else {
+            console.log('Not reconnecting - shouldReconnect:', this.shouldReconnect, 'isRecording:', this.isRecording);
+            this.cleanup();
+          }
+        };
+
+        // Set up MediaRecorder for audio capture
+        this.setupMediaRecorder();
+
+      } catch (error) {
+        console.error('Error starting recording:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying after error (${retryCount}/${maxRetries})...`);
+          setTimeout(() => attemptConnection(), 1000);
+        } else {
+          this.onError(`Failed to start recording: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+    };
+
+    await attemptConnection();
   }
 
   private setupMediaRecorder() {
@@ -145,18 +196,18 @@ export class TranscriptionService {
 
   private setupAudioContext() {
     try {
-      // Create AudioContext for processing
+      // AudioContext for processing
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
-      // Create audio source from microphone stream
+      // audio from microphone
       const source = this.audioContext.createMediaStreamSource(this.audioStream!);
       
-      // Create processor for chunking audio - use 4096 buffer size for better control
+      // chunking audio - 4096 buffer size 
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
       
       let audioBuffer: Float32Array[] = [];
-      const sampleRate = TranscriptionService.SAMPLE_RATE; // Use configured sample rate
-      const chunkDurationMs = TranscriptionService.CHUNK_DURATION_MS; // Use configured duration
+      const sampleRate = TranscriptionService.SAMPLE_RATE;
+      const chunkDurationMs = TranscriptionService.CHUNK_DURATION_MS; 
       const samplesPerChunk = Math.floor((sampleRate * chunkDurationMs) / 1000);
       
       this.processor.onaudioprocess = (event) => {
@@ -165,33 +216,31 @@ export class TranscriptionService {
         const inputBuffer = event.inputBuffer;
         const inputData = inputBuffer.getChannelData(0);
         
+        // Check for audio activity 
+        const volume = Math.sqrt(inputData.reduce((sum, sample) => sum + sample * sample, 0) / inputData.length);
+        if (volume > 0.01) {
+          this.resetSilenceTimer();
+        }
+        
         // Resample to 16kHz if needed
         const resampledData = this.resampleTo16kHz(inputData, inputBuffer.sampleRate);
         audioBuffer.push(resampledData);
         
-        // Calculate total samples collected
         const totalSamples = audioBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
         
         if (totalSamples >= samplesPerChunk) {
-          // Combine buffer chunks
           const combinedBuffer = new Float32Array(totalSamples);
           let offset = 0;
           for (const chunk of audioBuffer) {
             combinedBuffer.set(chunk, offset);
             offset += chunk.length;
           }
-          
-          // Extract exact chunk size and save remainder
+
           const chunkToSend = combinedBuffer.slice(0, samplesPerChunk);
           const remainder = combinedBuffer.slice(samplesPerChunk);
-          
-          // Convert to PCM 16-bit format
           const pcmData = this.convertToPCM16(chunkToSend);
-          
-          // Send the chunk
+
           this.sendPCMAudioChunk(pcmData);
-          
-          // Reset buffer with remainder
           audioBuffer = remainder.length > 0 ? [remainder] : [];
         }
       };
@@ -202,11 +251,33 @@ export class TranscriptionService {
       
       console.log('AudioContext setup completed');
       this.isRecording = true;
+      this.startSilenceTimer();
       this.onStatusChange('recording');
       
     } catch (error) {
       console.error('Error setting up AudioContext:', error);
       this.onError('Failed to set up audio processing');
+    }
+  }
+
+  private startSilenceTimer() {
+    this.clearSilenceTimer();
+    this.silenceTimer = setTimeout(() => {
+      console.log('Silence timeout reached, stopping recording');
+      this.stopRecording();
+    }, TranscriptionService.SILENCE_TIMEOUT_MS);
+  }
+
+  private resetSilenceTimer() {
+    if (this.isRecording) {
+      this.startSilenceTimer();
+    }
+  }
+
+  private clearSilenceTimer() {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
     }
   }
 
@@ -241,7 +312,6 @@ export class TranscriptionService {
     const view = new DataView(buffer);
     
     for (let i = 0; i < floatData.length; i++) {
-      // Convert float [-1, 1] to 16-bit PCM
       const sample = Math.max(-1, Math.min(1, floatData[i]));
       const pcmSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
       view.setInt16(i * TranscriptionService.BYTES_PER_SAMPLE, pcmSample, true); // little-endian
@@ -252,18 +322,42 @@ export class TranscriptionService {
 
   private async sendPCMAudioChunk(pcmData: Uint8Array) {
     try {
-      // Debug logging
       if (this.debugMode) {
         const chunkSizeKB = (pcmData.length / 1024).toFixed(2);
         console.log(`Sending audio chunk: ${pcmData.length} bytes (${chunkSizeKB} KB)`);
       }
       
-      // Validate chunk size before sending
+      // Handle large chunks by splitting automatically 
       if (pcmData.length > TranscriptionService.MAX_CHUNK_SIZE) {
-        console.warn(`Chunk size ${pcmData.length} exceeds recommended limit ${TranscriptionService.MAX_CHUNK_SIZE}`);
+        console.warn(`Chunk size ${pcmData.length} exceeds limit ${TranscriptionService.MAX_CHUNK_SIZE}. Auto-splitting...`);
+        
+        // Split into smaller chunks automatically
+        const numberOfChunks = Math.ceil(pcmData.length / TranscriptionService.MAX_CHUNK_SIZE);
+        for (let i = 0; i < numberOfChunks; i++) {
+          const start = i * TranscriptionService.MAX_CHUNK_SIZE;
+          const end = Math.min(start + TranscriptionService.MAX_CHUNK_SIZE, pcmData.length);
+          const chunk = pcmData.slice(start, end);
+          
+          const base64Audio = btoa(String.fromCharCode(...chunk));
+          
+          if (this.websocket?.readyState === WebSocket.OPEN) {
+            const message = {
+              type: 'audio_chunk',
+              audio_data: base64Audio
+            };
+            
+            this.websocket.send(JSON.stringify(message));
+            
+            // Small delay between chunks to prevent overwhelming
+            if (i < numberOfChunks - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1));
+            }
+          }
+        }
+        return;
       }
 
-      // Convert to base64 for WebSocket transmission
+      // Send normal-sized chunk
       const base64Audio = btoa(String.fromCharCode(...pcmData));
 
       if (this.websocket?.readyState === WebSocket.OPEN) {
@@ -294,8 +388,26 @@ export class TranscriptionService {
 
       case 'transcription_result':
         if (data.result) {
-          this.onTranscriptionResult(data.result);
+          // Reset silence timer when we get results
+          this.resetSilenceTimer();
+          
+          if (data.result.is_partial) {
+            // Handle partial results for live display
+            this.onPartialResult(data.result);
+          } else {
+            // Handle final results
+            console.log('Received final transcription result:', data.result);
+            this.onTranscriptionResult(data.result);
+          }
         }
+        break;
+
+      case 'session_ended':
+        console.log('Session ended by backend:', data.session_id);
+        // Session has been properly ended by backend
+        this.shouldReconnect = false;
+        this.isRecording = false;
+        this.onStatusChange('stopped');
         break;
 
       case 'error':
@@ -308,56 +420,119 @@ export class TranscriptionService {
   }
 
   stopRecording() {
+    console.log('TranscriptionService: Stop recording requested');
+    
     try {
+      // Disable reconnects for intentional stop
+      this.shouldReconnect = false;
+      
       if (this.isRecording) {
         this.isRecording = false;
         this.onStatusChange('stopping');
       }
 
-      // Send end session message
+      // Send end session message BEFORE cleanup
       if (this.websocket?.readyState === WebSocket.OPEN) {
         this.websocket.send(JSON.stringify({
           type: 'end_session'
         }));
+        console.log('Sent end_session message to backend');
+        
+        // Give backend time to process end_session before closing
+        setTimeout(() => {
+          this.cleanup();
+        }, 100);
+      } else {
+        // If websocket is not open, cleanup immediately
+        this.cleanup();
       }
-
-      this.cleanup();
+      
     } catch (error) {
       console.error('Error stopping recording:', error);
+      // Force cleanup even if there's an error
+      this.cleanup();
     }
   }
 
   private cleanup() {
+    console.log('TranscriptionService: Starting cleanup...');
+    
+  // Ensure reconnects are disabled during cleanup
+  this.shouldReconnect = false;
+
+    // Clear silence timer
+    this.clearSilenceTimer();
+    
+    // Stop recording immediately
+    this.isRecording = false;
+    
     // Stop audio processing
     if (this.processor) {
-      this.processor.disconnect();
+      try {
+        this.processor.disconnect();
+      } catch (e) {
+        console.warn('Error disconnecting processor:', e);
+      }
       this.processor = null;
     }
 
     if (this.audioContext) {
-      this.audioContext.close();
+      try {
+        this.audioContext.close();
+      } catch (e) {
+        console.warn('Error closing audio context:', e);
+      }
       this.audioContext = null;
     }
 
     // Stop media recorder (fallback if still using it)
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      this.mediaRecorder.stop();
+      try {
+        this.mediaRecorder.stop();
+      } catch (e) {
+        console.warn('Error stopping media recorder:', e);
+      }
     }
+    this.mediaRecorder = null;
 
     // Stop audio stream
     if (this.audioStream) {
-      this.audioStream.getTracks().forEach(track => track.stop());
+      try {
+        this.audioStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('Stopped audio track:', track.label);
+        });
+      } catch (e) {
+        console.warn('Error stopping audio tracks:', e);
+      }
       this.audioStream = null;
     }
 
-    // Close WebSocket
+    // Close WebSocket and send end session if connected
     if (this.websocket) {
-      this.websocket.close();
+      try {
+        if (this.websocket.readyState === WebSocket.OPEN) {
+          this.websocket.send(JSON.stringify({
+            type: 'end_session'
+          }));
+        }
+        // Close with normal closure code to signal intentional shutdown
+        try {
+          this.websocket.close(1000, 'Normal Closure');
+        } catch {
+          // Fallback without params if the environment rejects codes
+          this.websocket.close();
+        }
+      } catch (e) {
+        console.warn('Error closing websocket:', e);
+      }
       this.websocket = null;
     }
 
-    this.isRecording = false;
+    // Reset all state
     this.sessionId = null;
+    
+    console.log('TranscriptionService: Cleanup completed');
     this.onStatusChange('stopped');
   }
 

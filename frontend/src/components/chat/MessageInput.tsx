@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { TranscriptionService } from '../../services/transcriptionService';
 import type { TranscriptionResult } from '../../services/transcriptionService';
 import { TranscriptionConfirmation } from './TranscriptionConfirmation';
+import { LiveTranscriptPopup } from './LiveTranscriptPopup';
 import { 
   PaperAirplaneIcon,
   PaperClipIcon,
@@ -21,6 +22,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const [isRecording, setIsRecording] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showLiveTranscript, setShowLiveTranscript] = useState(false);
+  const [partialTranscript, setPartialTranscript] = useState('');
+  const [finalTranscript, setFinalTranscript] = useState('');
+  const [transcriptionConfidence, setTranscriptionConfidence] = useState<number | undefined>(undefined);
   const transcriptionServiceRef = useRef<TranscriptionService | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isStreaming, stopGeneration } = useChat();
@@ -53,34 +58,77 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const handleVoiceInput = () => {
     if (isRecording) {
       transcriptionServiceRef.current?.stopRecording();
-      setIsRecording(false);
       return;
     }
 
-    // Get the appropriate language code for transcription
-    const languageCode = TranscriptionService.getLanguageCode(language);
-    
-    transcriptionServiceRef.current = new TranscriptionService(
-      (result) => {
-        setTranscriptionResult(result);
-        setShowConfirmation(true);
-        setIsRecording(false);
-      },
-      (error) => {
-        alert('Transcription error: ' + error);
-        setIsRecording(false);
-      },
-      (status) => {
-        setIsRecording(status === 'recording');
-      }
-    );
-    
-    // Start recording with the appropriate language
-    transcriptionServiceRef.current.startRecording({
-      language_code: languageCode,
-      sample_rate: 16000,
-      enable_partial_results: true
-    });
+    // State reset before starting new session
+    const resetAllState = () => {
+      setPartialTranscript('');
+      setFinalTranscript('');
+      setTranscriptionConfidence(undefined);
+      setTranscriptionResult(null);
+      setShowConfirmation(false);
+      setShowLiveTranscript(false);
+      setIsRecording(false);
+    };
+
+    resetAllState();
+
+    // Stop and cleanup any existing transcription service
+    if (transcriptionServiceRef.current) {
+      console.log('Stopping previous transcription service...');
+      transcriptionServiceRef.current.stopRecording();
+      transcriptionServiceRef.current = null;
+    }
+
+    // Wait a moment for cleanup to complete before starting new session
+    setTimeout(() => {
+      setShowLiveTranscript(true);
+
+      const languageCode = TranscriptionService.getLanguageCode(language);
+      
+      // Create a completely new transcription service instance
+      transcriptionServiceRef.current = new TranscriptionService(
+        (result) => {
+          console.log('Final transcription result received:', result);
+          if (!showConfirmation) {
+            setTranscriptionResult(result);
+            setFinalTranscript(result.transcript);
+            setTranscriptionConfidence(result.confidence);
+            setShowConfirmation(true);
+            setShowLiveTranscript(false);
+            setIsRecording(false);
+          } else {
+            console.log('Ignoring duplicate final result - confirmation already shown');
+          }
+        },
+        (error) => {
+          console.error('Transcription error:', error);
+          alert('Transcription error: ' + error);
+          setIsRecording(false);
+          setShowLiveTranscript(false);
+        },
+        (status) => {
+          console.log('Transcription status:', status);
+          setIsRecording(status === 'recording');
+          if (status === 'stopped') {
+            setShowLiveTranscript(false);
+          }
+        },
+        (partialResult) => {
+          console.log('Partial transcription result:', partialResult);
+          setPartialTranscript(partialResult.transcript);
+          setTranscriptionConfidence(partialResult.confidence);
+        }
+      );
+      
+      // Start recording with the appropriate language
+      transcriptionServiceRef.current.startRecording({
+        language_code: languageCode,
+        sample_rate: 16000,
+        enable_partial_results: true
+      });
+    }, 200);
   };
 
   return (
@@ -110,10 +158,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         <button
           type="button"
           onClick={handleVoiceInput}
-          className="p-2 flex items-center justify-center transition-colors"
+          className={`p-2 flex items-center justify-center transition-all duration-200 ${
+            isRecording ? 'animate-pulse' : ''
+          }`}
           style={{
             color: isRecording ? '#FF0000' : '#21A691',
-            backgroundColor: '#eeeeee'
+            backgroundColor: '#eeeeee',
+            transform: isRecording ? 'scale(1.1)' : 'scale(1)'
           }}
           onMouseEnter={(e) => {
             if (!isRecording) e.currentTarget.style.color = '#87DF2C';
@@ -121,7 +172,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           onMouseLeave={(e) => {
             if (!isRecording) e.currentTarget.style.color = '#21A691';
           }}
-          title={isRecording ? 'Stop recording' : 'Voice input'}
+          title={isRecording ? t('transcription.stop') : 'Voice input'}
           disabled={disabled || isStreaming}
         >
           {isRecording ? <StopIcon className="h-5 w-5" /> : <MicrophoneIcon className="h-5 w-5" />}
@@ -186,12 +237,23 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,image/*"
       />
 
-      {isRecording && (
-        <div className="mt-2 flex items-center space-x-2" style={{ color: '#FF0000' }}>
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#FF0000' }}></div>
-          <span className="text-sm">Recording...</span>
-        </div>
-      )}
+      {/* Live Transcript Popup */}
+      <LiveTranscriptPopup
+        isVisible={showLiveTranscript}
+        isRecording={isRecording}
+        partialTranscript={partialTranscript}
+        finalTranscript={finalTranscript}
+        confidence={transcriptionConfidence}
+        onStop={() => {
+          transcriptionServiceRef.current?.stopRecording();
+        }}
+        onClose={() => {
+          setShowLiveTranscript(false);
+          if (isRecording) {
+            transcriptionServiceRef.current?.stopRecording();
+          }
+        }}
+      />
 
       {/* Transcription confirmation dialog */}
       <TranscriptionConfirmation
@@ -202,10 +264,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           setMessage(finalText);
           setShowConfirmation(false);
           setTranscriptionResult(null);
+          setPartialTranscript('');
+          setFinalTranscript('');
+          setTranscriptionConfidence(undefined);
         }}
         onCancel={() => {
           setShowConfirmation(false);
           setTranscriptionResult(null);
+          setPartialTranscript('');
+          setFinalTranscript('');
+          setTranscriptionConfidence(undefined);
         }}
       />
     </div>

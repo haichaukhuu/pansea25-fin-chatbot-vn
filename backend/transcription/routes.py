@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 import json
 import logging
 import base64
+import asyncio
 from typing import Optional
 
 from .service import transcription_service
@@ -48,12 +49,15 @@ async def transcription_websocket(websocket: WebSocket):
         config_data = await websocket.receive_text()
         config = json.loads(config_data)
         
-        # Extract transcription parameters
-        language_code = config.get('language_code', 'en-US')
+        # Extract transcription parameters - default to Vietnamese 
+        language_code = config.get('language_code', 'vi-VN')
         sample_rate = config.get('sample_rate', 16000)
         enable_partial_results = config.get('enable_partial_results', True)
         
         logger.info(f"Starting transcription session with config: {config}")
+        
+        # Clean up any existing sessions for this connection first
+        await transcription_service.cleanup_all_sessions()
         
         # Start transcription session
         session_id, result_generator = await transcription_service.start_transcription_session(
@@ -62,16 +66,15 @@ async def transcription_websocket(websocket: WebSocket):
             enable_partial_results=enable_partial_results
         )
         
+        logger.info(f"Created new transcription session: {session_id}")
+        
         # Send session started confirmation
         await websocket.send_text(json.dumps({
             "type": "session_started",
             "session_id": session_id,
             "status": "ready"
         }))
-        
-        # Create tasks for handling incoming audio and outgoing results
-        import asyncio
-        
+               
         async def handle_incoming_audio():
             """Handle incoming audio chunks from WebSocket"""
             try:
@@ -86,44 +89,86 @@ async def transcription_websocket(websocket: WebSocket):
                         
                     elif data.get('type') == 'end_session':
                         logger.info(f"Received end session request for {session_id}")
+                        
+                        # Give AWS Transcribe time to send final results before ending
+                        await asyncio.sleep(1)
+
                         await transcription_service.end_transcription_session(session_id)
+                        
+                        # Additional delay after ending session for cleanup
+                        await asyncio.sleep(1)
+
+                        # Send final session ended message to frontend
+                        try:
+                            await websocket.send_text(json.dumps({
+                                "type": "session_ended",
+                                "session_id": session_id,
+                                "status": "completed"
+                            }))
+                        except:
+                            logger.debug("Could not send session_ended message - websocket already closed")
+                        
+                        # Gracefully close the websocket to signal normal closure (1000)
+                        try:
+                            await websocket.close(code=1000)
+                        except Exception as close_err:
+                            logger.debug(f"WebSocket close during end_session encountered: {close_err}")
                         break
                         
             except WebSocketDisconnect:
-                logger.info(f"WebSocket disconnected for session {session_id}")
+                logger.info(f"WebSocket disconnected during audio handling for session {session_id}")
             except Exception as e:
                 logger.error(f"Error handling incoming audio: {e}")
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": str(e)
-                }))
+                try:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": str(e)
+                    }))
+                except:
+                    logger.warning("Could not send error message to disconnected client")
         
         async def handle_outgoing_results():
             """Handle outgoing transcription results"""
             try:
                 async for result in result_generator:
-                    await websocket.send_text(json.dumps({
-                        "type": "transcription_result",
-                        "status": result.status.value,
-                        "result": result.result.dict() if result.result else None,
-                        "error_message": result.error_message,
-                        "session_id": result.session_id
-                    }))
+                    try:
+                        await websocket.send_text(json.dumps({
+                            "type": "transcription_result",
+                            "status": result.status.value,
+                            "result": result.result.dict() if result.result else None,
+                            "error_message": result.error_message,
+                            "session_id": result.session_id
+                        }))
+                    except WebSocketDisconnect:
+                        logger.info(f"WebSocket disconnected during result sending for session {session_id}")
+                        break
+                    except Exception as send_error:
+                        logger.warning(f"Error sending result: {send_error}")
+                        break
                     
             except Exception as e:
                 logger.error(f"Error handling outgoing results: {e}")
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": str(e)
-                }))
+                try:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": str(e)
+                    }))
+                except:
+                    logger.warning("Could not send error message to disconnected client")
         
         # Run both tasks concurrently
-        await asyncio.gather(
-            handle_incoming_audio(),
-            handle_outgoing_results(),
-            return_exceptions=True
-        )
-        
+        try:
+            await asyncio.gather(
+                handle_incoming_audio(),
+                handle_outgoing_results(),
+                return_exceptions=True
+            )
+        except Exception as gather_error:
+            logger.error(f"Error in websocket task gathering: {gather_error}")
+        finally:
+            # Add delay before cleanup to let AWS finish processing
+            await asyncio.sleep(1)
+
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for session {session_id}")
     except Exception as e:
@@ -134,19 +179,25 @@ async def transcription_websocket(websocket: WebSocket):
                 "message": str(e)
             }))
         except:
-            pass
+            logger.warning("Could not send error message to disconnected client")
     finally:
-        # Clean up session
-        if session_id:
+        # Only clean up if session still exists to prevent double cleanup
+        if session_id and session_id in transcription_service.active_sessions:
+            logger.info(f"Cleaning up session {session_id} in finally block")
             await transcription_service.end_transcription_session(session_id)
+        elif session_id:
+            logger.info(f"Session {session_id} already cleaned up, skipping")
+        else:
+            # Clean up any orphaned sessions only if no specific session
+            logger.info("No session ID, checking for orphaned sessions")
+            await transcription_service.cleanup_all_sessions()
 
 
 @router.post("/confirm")
 async def confirm_transcription(confirmation: TranscriptionConfirmation):
     """Confirm and optionally edit transcribed text"""
     try:
-        # For now, just return the confirmed text
-        # In a real application, you might want to store this or trigger further processing
+        # Return the confirmed text
         final_text = confirmation.edited_transcript or confirmation.original_transcript
         
         return {
