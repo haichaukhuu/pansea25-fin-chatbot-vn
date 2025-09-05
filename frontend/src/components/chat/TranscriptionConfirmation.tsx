@@ -103,7 +103,7 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
             {t('transcription.result_title')}
           </h3>
           <div className="flex items-center space-x-3">
-            {confidence && (
+            {/* {confidence && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm" style={{ color: '#666666' }}>
                   {t('transcription.confidence')}
@@ -115,7 +115,7 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
                   {Math.round(confidence * 100)}%
                 </span>
               </div>
-            )}
+            )} */}
             <button
               onClick={handleCancel}
               className="p-1 rounded-full hover:bg-gray-100 transition-colors"
