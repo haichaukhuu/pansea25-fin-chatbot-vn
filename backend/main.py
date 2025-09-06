@@ -18,8 +18,11 @@ from config import API_CONFIG
 from ai_models.model_factory import ModelFactory
 from ai_models.model_manager import ModelManager
 
-# Import Firebase authentication components
-from auth import auth_router, firebase_config
+# Import database connections
+from database.connections.rds_postgres import postgres_connection
+
+# Import authentication components
+from auth.routes import auth_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,16 +44,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Firebase on startup
+# Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize Firebase and AI models on startup"""
+    """Initialize database and AI models on startup"""
     try:
-        # Initialize Firebase Admin SDK
-        firebase_config.initialize_admin_sdk()
-        logger.info("Firebase initialized successfully")
+        # Initialize PostgreSQL connection
+        postgres_connection.initialize()
+        
+        # Create database tables if they don't exist
+        postgres_connection.create_tables()
+        
+        logger.info("Database initialized successfully")
     except Exception as e:
-        logger.error(f"Failed to initialize Firebase: {e}")
+        logger.error(f"Failed to initialize database: {e}")
 
 # Include authentication router
 app.include_router(auth_router, prefix="/api")
@@ -100,22 +107,33 @@ async def root():
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    if not model_manager:
-        return HealthResponse(
-            status="unhealthy",
-            models={},
-            message="Model manager not initialized"
-        )
+    db_status = "healthy"
+    model_status = {}
+    
+    # Check database health
+    try:
+        with postgres_connection.get_db_session() as db:
+            # Simple query to check DB connection
+            pass
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        db_status = "unhealthy"
     
     # Check model health
-    model_status = {}
+    if not model_manager:
+        return HealthResponse(
+            status="degraded" if db_status == "healthy" else "unhealthy",
+            models={},
+            message="Model manager not initialized, database status: " + db_status
+        )
+    
     try:
         available_models = model_manager.get_available_models()
         if not available_models:
             return HealthResponse(
-                status="unhealthy",
+                status="degraded" if db_status == "healthy" else "unhealthy",
                 models={},
-                message="No models available"
+                message="No models available, database status: " + db_status
             )
         
         for model_name in available_models:
@@ -125,12 +143,15 @@ async def health_check():
         logger.error(f"Health check failed: {e}")
         model_status = {"error": False}
     
-    overall_status = "healthy" if all(model_status.values()) else "degraded"
+    # Overall status is healthy only if both database and all models are healthy
+    overall_status = "healthy" if db_status == "healthy" and all(model_status.values()) else "degraded"
+    if db_status == "unhealthy" and not all(model_status.values()):
+        overall_status = "unhealthy"
     
     return HealthResponse(
         status=overall_status,
         models=model_status,
-        message="API is running"
+        message=f"API is running, database status: {db_status}"
     )
 
 @app.post("/chat", response_model=ChatResponse)
