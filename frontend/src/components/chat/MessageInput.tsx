@@ -26,6 +26,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   const [partialTranscript, setPartialTranscript] = useState('');
   const [finalTranscript, setFinalTranscript] = useState('');
   const [transcriptionConfidence, setTranscriptionConfidence] = useState<number | undefined>(undefined);
+  const accumulatedTranscriptRef = useRef('');
+  const finalConfidenceScoresRef = useRef<number[]>([]);
+  const sessionEndedRef = useRef(false);
+  const currentSessionIdRef = useRef<string | null>(null);
   const transcriptionServiceRef = useRef<TranscriptionService | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isStreaming, stopGeneration } = useChat();
@@ -70,6 +74,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       setShowConfirmation(false);
       setShowLiveTranscript(false);
       setIsRecording(false);
+      accumulatedTranscriptRef.current = '';
+      finalConfidenceScoresRef.current = [];
+      sessionEndedRef.current = false;
+      currentSessionIdRef.current = null;
     };
 
     resetAllState();
@@ -91,16 +99,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       transcriptionServiceRef.current = new TranscriptionService(
         (result) => {
           console.log('Final transcription result received:', result);
-          if (!showConfirmation) {
-            setTranscriptionResult(result);
-            setFinalTranscript(result.transcript);
-            setTranscriptionConfidence(result.confidence);
-            setShowConfirmation(true);
-            setShowLiveTranscript(false);
-            setIsRecording(false);
-          } else {
-            console.log('Ignoring duplicate final result - confirmation already shown');
+          
+          // Accumulate final results instead of showing confirmation immediately
+          const newAccumulated = accumulatedTranscriptRef.current + (accumulatedTranscriptRef.current ? ' ' : '') + result.transcript;
+          accumulatedTranscriptRef.current = newAccumulated;
+          console.log('Accumulated transcript:', newAccumulated);
+          
+          // Accumulate confidence scores for averaging
+          if (result.confidence) {
+            finalConfidenceScoresRef.current = [...finalConfidenceScoresRef.current, result.confidence];
           }
+          
+          // Update the final transcript display in live popup
+          setFinalTranscript(prev => prev + (prev ? ' ' : '') + result.transcript);
         },
         (error) => {
           console.error('Transcription error:', error);
@@ -110,9 +121,53 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         },
         (status) => {
           console.log('Transcription status:', status);
+          
+          // Get current session ID from the service
+          const currentServiceSessionId = transcriptionServiceRef.current?.getSessionId();
+          
+          // Only process status changes for the current session
+          if (currentServiceSessionId && currentSessionIdRef.current && currentServiceSessionId !== currentSessionIdRef.current) {
+            console.log(`Ignoring status '${status}' from different session: ${currentServiceSessionId} vs ${currentSessionIdRef.current}`);
+            return;
+          }
+          
           setIsRecording(status === 'recording');
-          if (status === 'stopped') {
-            setShowLiveTranscript(false);
+          
+          // Track when recording starts to set current session
+          if (status === 'recording' && currentServiceSessionId) {
+            currentSessionIdRef.current = currentServiceSessionId;
+            console.log('Set current session ID:', currentServiceSessionId);
+          }
+          
+          // Only hide live transcript and show confirmation when recording is fully stopped
+          if (status === 'stopped' && !sessionEndedRef.current && currentServiceSessionId === currentSessionIdRef.current) {
+            sessionEndedRef.current = true;
+            console.log('Processing session end for current session:', currentServiceSessionId);
+            
+            // Small delay to ensure all final results are processed
+            setTimeout(() => {
+              if (accumulatedTranscriptRef.current.trim()) {
+                // Calculate average confidence
+                const avgConfidence = finalConfidenceScoresRef.current.length > 0 
+                  ? finalConfidenceScoresRef.current.reduce((sum, score) => sum + score, 0) / finalConfidenceScoresRef.current.length
+                  : undefined;
+                
+                // Create complete transcription result
+                const completeResult: TranscriptionResult = {
+                  transcript: accumulatedTranscriptRef.current,
+                  confidence: avgConfidence,
+                  is_partial: false,
+                  start_time: undefined,
+                  end_time: undefined,
+                  alternatives: []
+                };
+                
+                console.log('Setting final transcription result:', completeResult);
+                setTranscriptionResult(completeResult);
+                setShowConfirmation(true);
+              }
+              setShowLiveTranscript(false);
+            }, 500);
           }
         },
         (partialResult) => {
@@ -128,7 +183,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         sample_rate: 16000,
         enable_partial_results: true
       });
-    }, 200);
+    }, 500); // Increased delay to ensure complete cleanup
   };
 
   return (
@@ -248,8 +303,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           transcriptionServiceRef.current?.stopRecording();
         }}
         onClose={() => {
+          console.log('Live transcript popup close requested');
           setShowLiveTranscript(false);
           if (isRecording) {
+            console.log('Stopping recording due to popup close');
             transcriptionServiceRef.current?.stopRecording();
           }
         }}
@@ -267,6 +324,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           setPartialTranscript('');
           setFinalTranscript('');
           setTranscriptionConfidence(undefined);
+          accumulatedTranscriptRef.current = '';
+          finalConfidenceScoresRef.current = [];
+          sessionEndedRef.current = false;
+          currentSessionIdRef.current = null;
         }}
         onCancel={() => {
           setShowConfirmation(false);
@@ -274,6 +335,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           setPartialTranscript('');
           setFinalTranscript('');
           setTranscriptionConfidence(undefined);
+          accumulatedTranscriptRef.current = '';
+          finalConfidenceScoresRef.current = [];
+          sessionEndedRef.current = false;
+          currentSessionIdRef.current = null;
         }}
       />
     </div>
