@@ -1,19 +1,20 @@
-# FastAPI and web server
+# Core Web Framework
 fastapi>=0.108.0
 uvicorn>=0.25.0
-python-multipart>=0.0.6
 pydantic>=2.5.2
-pydantic[email]>=2.5.2
+python-multipart>=0.0.6
+email-validator>=1.1.0
 
 # Database
 sqlalchemy>=2.0.23
 psycopg2-binary>=2.9.9
 alembic>=1.13.0
 
-# Authentication
+# Authentication and Security
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 pyjwt>=2.8.0
+bcrypt>=3.2.0
 
 # AWS SDK
 boto3>=1.29.6
@@ -21,23 +22,7 @@ boto3>=1.29.6
 # Google GenAI
 google-generativeai>=0.3.1
 
-# Utilities
-python-dotenv>=1.0.0
-requests>=2.31.0
-httpx>=0.25.2
-tenacity>=8.2.3
-
-# AI model dependencies
-transformers
-requests
-python-dotenv
-httpx
-torch
-sentence-transformers
-numpy
-google-genai
-
-# RAG dependencies
+# RAG System Dependencies
 chromadb
 crawl4ai
 faiss-cpu
@@ -45,11 +30,18 @@ beautifulsoup4
 selenium
 duckduckgo-search
 apscheduler
+
+# General Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+httpx>=0.25.2
+tenacity>=8.2.3
+
+# AI Model Dependencies (Note: some of these may need specific versions depending on your models)
+transformers
+torch
 sentence-transformers
 numpy
 
-# AWS dependencies
-boto3
-
-# Additional dependencies
+# Additional Dependencies
 setuptools
