@@ -21,11 +21,6 @@ backend/
 │   │   ├── chat_service.py          # Chat orchestration logic
 │   │   ├── recommendation_service.py # Financial recommendations
 │   │   └── rag_service.py           # RAG workflow logic
-│   ├──  models/                   # Data models & schemas
-│   │   ├── user.py                  # User data models
-│   │   ├── chat.py                  # Chat message models
-│   │   ├── financial.py             # Financial program models
-│   │   └── document.py              # Document models
 │   └── __init__.py
 │
 ├──  external_services/            # Separate Specialized Services
@@ -48,10 +43,15 @@ backend/
 │
 ├──  database/                     # Data Storage Layer
 │   ├──  connections/              # Database connections
-│   │   ├── rds_postgres.py              # PostgreSQL connection
-│   │   ├── s3.py                    # S3 storage connection
-│   │   ├── vector_db.py             # Vector database connection
-│   │   └── neo4j.py                 # Neo4j connection (optional)
+│   │   ├── rds_postgres.py              
+│   │   ├── s3.py                    
+│   │   ├── vector_db.py             
+│   │   └── neo4j.py                 
+│   ├──  models/                   # Data models & schemas
+│   │   ├── user.py              
+│   │   ├── chat.py
+│   │   ├── financial.py             
+│   │   └── document.py                
 │   └──  repositories/             # Data access layer
 │       ├── user_repository.py       # User data operations
 │       ├── document_repository.py   # Document operations
