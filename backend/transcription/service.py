@@ -15,6 +15,15 @@ from botocore.exceptions import ClientError, NoCredentialsError
 
 from .models import TranscriptionResult, TranscriptionStatus, TranscriptionResponse
 
+# Import from config - handle both relative and absolute imports
+try:
+    from ..config import get_aws_transcribe_config
+except ImportError:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from config import get_aws_transcribe_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,16 +99,28 @@ class TranscriptionService:
     """Service for managing Amazon Transcribe streaming"""
     
     def __init__(self):
-        self.region = os.getenv('AWS_REGION', 'us-west-2')
+        # Get AWS transcribe configuration
+        aws_config = get_aws_transcribe_config()
+        self.access_key_id = aws_config["access_key_id"]
+        self.secret_access_key = aws_config["secret_access_key"]
+        self.region = aws_config["region"]
         self.client = None
         self.active_sessions = {}
         self._shutdown_event = None
         
     def _validate_aws_credentials(self) -> bool:
-        """Validate AWS credentials"""
+  
         try:
-            # Check if credentials are available
-            session = boto3.Session()
+            if self.access_key_id and self.secret_access_key:
+                session = boto3.Session(
+                    aws_access_key_id=self.access_key_id,
+                    aws_secret_access_key=self.secret_access_key,
+                    region_name=self.region
+                )
+            else:
+                # Fall back to default credentials
+                session = boto3.Session()
+            
             credentials = session.get_credentials()
             if not credentials:
                 return False
@@ -110,22 +131,28 @@ class TranscriptionService:
             return True
             
         except (NoCredentialsError, AttributeError) as e:
-            logger.error(f"AWS credentials validation failed: {e}")
+            logger.error(f"AWS transcribe credentials validation failed: {e}")
             return False
     
     async def initialize(self) -> bool:
         """Initialize the transcription service"""
         try:
+            if self.access_key_id and self.secret_access_key:
+                # Temporarily set environment variables for this session
+                os.environ['AWS_ACCESS_KEY_ID'] = self.access_key_id
+                os.environ['AWS_SECRET_ACCESS_KEY'] = self.secret_access_key
+                os.environ['AWS_DEFAULT_REGION'] = self.region
+                            
             if not self._validate_aws_credentials():
-                logger.error("AWS credentials not found or invalid")
+                logger.error("AWS transcribe credentials not found or invalid")
                 return False
-                
+            
+            # Create client with region only - credentials are resolved automatically
             self.client = TranscribeStreamingClient(region=self.region)
            
             if self._shutdown_event is None:
                 self._shutdown_event = asyncio.Event()
                 
-            logger.info(f"Transcription service initialized for region: {self.region}")
             return True
             
         except Exception as e:
@@ -152,9 +179,7 @@ class TranscriptionService:
         
         session_id = str(uuid.uuid4())
         
-        try:
-            logger.info(f"Starting new transcription session {session_id} with language {language_code}")
-            
+        try:            
             # Start transcription stream
             stream = await self.client.start_stream_transcription(
                 language_code=language_code,
@@ -253,9 +278,7 @@ class TranscriptionService:
                         error_message=str(e),
                         session_id=session_id
                     )
-                finally:
-                    logger.info(f"Starting cleanup for session {session_id}")
-                    
+                finally:                    
                     # Signal handler to shutdown gracefully
                     if handler:
                         handler.shutdown()
@@ -273,7 +296,6 @@ class TranscriptionService:
                     # Clean up session
                     if session_id in self.active_sessions:
                         del self.active_sessions[session_id]
-                        logger.info(f"Cleaned up session {session_id} from result generator")
             
             return session_id, result_generator()
             
@@ -329,7 +351,6 @@ class TranscriptionService:
             raise
     
     async def end_transcription_session(self, session_id: str):
-        """End a transcription session"""
         if session_id not in self.active_sessions:
             logger.warning(f"Session {session_id} not found for cleanup")
             return
@@ -337,22 +358,18 @@ class TranscriptionService:
         try:
             session = self.active_sessions[session_id]
             stream = session['stream']
-            
-            logger.info(f"Ending transcription session: {session_id}")
-            
+                        
             # Add delay before ending stream to prevent race conditions
             await asyncio.sleep(0.05)  # 50ms delay to let in-flight requests complete
             
             # End the input stream with timeout to prevent hanging
             try:
-                await asyncio.wait_for(stream.input_stream.end_stream(), timeout=3.0)
-                logger.info(f"Successfully ended input stream for session {session_id}")
+                await asyncio.wait_for(stream.input_stream.end_stream(), timeout=5.0)
             except asyncio.TimeoutError:
                 logger.warning(f"Timeout while ending input stream for session {session_id}")
             except asyncio.CancelledError:
                 logger.info(f"Input stream already cancelled for session {session_id}")
             except Exception as stream_error:
-                # Check if it's a future-related error and handle gracefully
                 error_msg = str(stream_error).lower()
                 if any(keyword in error_msg for keyword in ["invalidstateerror", "cancelled", "future", "closed"]):
                     logger.info(f"Stream already terminated for session {session_id}: {stream_error}")
@@ -385,8 +402,8 @@ class TranscriptionService:
             self._shutdown_event.set()
         
         # Give a moment for ongoing operations to see the shutdown signal
-        await asyncio.sleep(0.1)
-        
+        await asyncio.sleep(1)
+
         # Clean up sessions
         cleanup_tasks = []
         for session_id in session_ids:
