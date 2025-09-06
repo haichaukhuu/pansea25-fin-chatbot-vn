@@ -159,7 +159,6 @@ export class TranscriptionService {
           }
         };
 
-        // Set up MediaRecorder for audio capture
         this.setupMediaRecorder();
 
       } catch (error) {
@@ -181,7 +180,6 @@ export class TranscriptionService {
     if (!this.audioStream) return;
 
     try {
-      // Use AudioContext for better control over audio processing
       this.setupAudioContext();
 
     } catch (error) {
@@ -195,7 +193,6 @@ export class TranscriptionService {
 
   private setupAudioContext() {
     try {
-      // AudioContext for processing
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       // audio from microphone
@@ -413,7 +410,7 @@ export class TranscriptionService {
         // Give backend time to process end_session before closing
         setTimeout(() => {
           this.cleanup();
-        }, 200); // Increased delay
+        }, 200); 
       } else {
         // If websocket is not open, cleanup immediately
         this.cleanup();
@@ -421,7 +418,6 @@ export class TranscriptionService {
       
     } catch (error) {
       console.error('Error stopping recording:', error);
-      // Force cleanup even if there's an error
       this.cleanup();
     }
   }

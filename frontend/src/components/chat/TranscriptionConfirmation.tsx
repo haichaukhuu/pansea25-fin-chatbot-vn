@@ -16,7 +16,7 @@ interface TranscriptionConfirmationProps {
 
 export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps> = ({
   transcript,
-  confidence,
+  // confidence,
   onConfirm,
   onCancel,
   isVisible
@@ -49,11 +49,11 @@ export const TranscriptionConfirmation: React.FC<TranscriptionConfirmationProps>
     setIsEditing(true);
   };
 
-  const confidenceColor = confidence && confidence > 0.8 
-    ? '#22c55e' 
-    : confidence && confidence > 0.6 
-      ? '#f59e0b' 
-      : '#ef4444';
+  // const confidenceColor = confidence && confidence > 0.8 
+  //   ? '#22c55e' 
+  //   : confidence && confidence > 0.6 
+  //     ? '#f59e0b' 
+  //     : '#ef4444';
 
   return (
     <div 

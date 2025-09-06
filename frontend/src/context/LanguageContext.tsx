@@ -78,7 +78,7 @@ const translations = {
     'input.send_message': 'Gửi tin nhắn',
     'input.stop_generation': 'Dừng tạo nội dung',
     'input.recording': 'Đang ghi âm...',
-    'chat.typing': 'Đang nhập...',
+    'chat.typing': 'AI đang trả lời...',
     'chat.ai_responding': 'AI đang trả lời...',
     // Transcription translations
     'transcription.result_title': 'Kết quả phiên âm',
@@ -183,7 +183,7 @@ const translations = {
     'input.send_message': 'Send message',
     'input.stop_generation': 'Stop generation',
     'input.recording': 'Recording...',
-    'chat.typing': 'Typing...',
+    'chat.typing': 'AI is responding...',
     'chat.ai_responding': 'AI is responding...',
     // Transcription translations
     'transcription.result_title': 'Transcription Result',
