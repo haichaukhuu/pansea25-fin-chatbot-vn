@@ -1,5 +1,33 @@
-pydantic
-fastapi
+# FastAPI and web server
+fastapi>=0.108.0
+uvicorn>=0.25.0
+python-multipart>=0.0.6
+pydantic>=2.5.2
+pydantic[email]>=2.5.2
+
+# Database
+sqlalchemy>=2.0.23
+psycopg2-binary>=2.9.9
+alembic>=1.13.0
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+pyjwt>=2.8.0
+
+# AWS SDK
+boto3>=1.29.6
+
+# Google GenAI
+google-generativeai>=0.3.1
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+httpx>=0.25.2
+tenacity>=8.2.3
+
+# AI model dependencies
 transformers
 requests
 python-dotenv
@@ -7,13 +35,7 @@ httpx
 torch
 sentence-transformers
 numpy
-uvicorn
-# langchain
-# langchain-community
 google-genai
-python-jose[cryptography] 
-python-multipart 
-tiktoken
 
 # RAG dependencies
 chromadb
@@ -28,9 +50,6 @@ numpy
 
 # AWS dependencies
 boto3
-pyjwt
 
 # Additional dependencies
-email-validator
-passlib[bcrypt]
 setuptools

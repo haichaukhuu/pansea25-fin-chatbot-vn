@@ -2,8 +2,39 @@ import os
 from typing import Dict, Any
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv()
+
+class Settings:
+    # Application settings
+    APP_NAME = "AgriFinHub"
+    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    
+    # JWT Authentication settings
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+    
+    # Database settings
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = int(os.getenv("DB_PORT", "5432"))
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    RDS_DATABASE_URL = os.getenv("RDS_DATABASE_URL")
+    
+    # AI Model settings
+    GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY")
+    
+    # AWS settings
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_REGION = os.getenv("AWS_REGION")
+
+settings = Settings()
 
 # Model configurations
 MODEL_CONFIGS = {
@@ -109,3 +140,5 @@ def validate_config() -> bool:
         return False
     
     return True
+
+
