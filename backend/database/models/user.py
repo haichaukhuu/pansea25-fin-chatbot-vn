@@ -2,9 +2,9 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from database.connections.rds_postgres import postgres_connection
 
-Base = declarative_base()
+Base = postgres_connection.Base
 
 class User(Base):
     __tablename__ = 'users'
