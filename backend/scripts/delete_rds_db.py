@@ -63,5 +63,5 @@ def delete_database(db_name):
     return True
 
 if __name__ == "__main__":
-    db_name="agrifinhub-postgres-db"
+    db_name="user"
     delete_database(db_name=db_name)
