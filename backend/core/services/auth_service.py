@@ -95,6 +95,12 @@ class AuthService:
             if user_id is None:
                 logger.warning("Token verification failed: missing user ID")
                 return None
+            
+            exp = payload.get("exp")
+            if exp is None or datetime.utcfromtimestamp(exp) < datetime.utcnow():
+                logger.warning("Token verification failed: token expired")
+                return None
+            
             return uuid.UUID(user_id)
         except jwt.PyJWTError as e:
             logger.warning(f"Token verification failed: {str(e)}")
@@ -114,3 +120,4 @@ class AuthService:
             return TokenData(user_id=user_id, expires_at=expires_at)
         except Exception:
             return None
+        

@@ -1,53 +1,55 @@
-from pydantic import BaseModel, EmailStr, validator
-from typing import Optional
-import uuid
+from pydantic import BaseModel, EmailStr, Field, validator
+from typing import Optional, List, Dict, Any
 from datetime import datetime
+import uuid
 
-class UserBase(BaseModel):
-    """Base user model with common attributes"""
+class UserCreate(BaseModel):
+    """Model for user registration"""
     email: EmailStr
-    username: str
-    
-    class Config:
-        orm_mode = True
-
-class UserCreate(UserBase):
-    """User registration model"""
-    password: str
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8)
     display_name: Optional[str] = None
-
+    
+    @validator('username')
+    def username_alphanumeric(cls, v):
+        if not v.replace('_', '').replace('-', '').isalnum():
+            raise ValueError('Username must contain only alphanumeric characters, underscores, or hyphens')
+        return v
+    
     @validator('password')
     def password_strength(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one digit')
+        if not any(char.isalpha() for char in v):
+            raise ValueError('Password must contain at least one letter')
         return v
 
+class UserLogin(BaseModel):
+    """Model for user login"""
+    email: EmailStr
+    password: str
+
 class UserUpdate(BaseModel):
-    """User update model"""
+    """Model for updating user information"""
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     password: Optional[str] = None
     display_name: Optional[str] = None
-    
-    class Config:
-        orm_mode = True
 
-class UserResponse(UserBase):
-    """User response model (for API returns)"""
+class UserResponse(BaseModel):
+    """Model for user responses"""
     id: uuid.UUID
+    email: str
+    username: str
     display_name: Optional[str] = None
-    created_at: datetime
     is_active: bool
+    is_admin: bool
+    created_at: datetime
     
     class Config:
         orm_mode = True
-
-class UserLogin(BaseModel):
-    """User login model"""
-    email: EmailStr
-    password: str
 
 class TokenData(BaseModel):
-    """Token data model"""
+    """Model for token data"""
     user_id: str
     expires_at: datetime
