@@ -27,11 +27,6 @@ class AuthService:
                 logger.warning(f"Registration attempt with existing email: {user_data.email}")
                 raise ValueError("User with this email already exists")
                 
-            # Check if username is taken
-            if self.user_repository.get_user_by_username(user_data.username):
-                logger.warning(f"Registration attempt with existing username: {user_data.username}")
-                raise ValueError("Username is already taken")
-                
             # Create the user
             user = self.user_repository.create_user(user_data)
             logger.info(f"Successfully registered user: {user.email}")
