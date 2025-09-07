@@ -74,18 +74,18 @@ async def register(
 
 @auth_router.post("/login", response_model=Dict[str, str])
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_data: UserLogin,  # Use your UserLogin model instead of OAuth2PasswordRequestForm
     auth_service: AuthService = Depends(get_auth_service),
     response: Response = None
 ):
     """Login and get access token"""
     try:
-        logger.info(f"Login attempt for username: {form_data.username}")
-        login_data = UserLogin(email=form_data.username, password=form_data.password)
-        user = auth_service.authenticate_user(login_data)
+        logger.info(f"Login attempt for email: {user_data.email}")
+        # Already using UserLogin model, so no need to create it
+        user = auth_service.authenticate_user(user_data)
         
         if not user:
-            logger.warning(f"Failed login attempt for: {form_data.username}")
+            logger.warning(f"Failed login attempt for: {user_data.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
@@ -108,7 +108,7 @@ async def login(
                 samesite="strict"
             )
         
-        logger.info(f"Successful login for: {form_data.username}")
+        logger.info(f"Successful login for: {user_data.email}")
         return {
             "access_token": access_token,
             "token_type": "bearer",
