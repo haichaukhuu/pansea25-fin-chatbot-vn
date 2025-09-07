@@ -1,47 +1,44 @@
-# Core Web Framework
-fastapi>=0.108.0
-uvicorn>=0.25.0
-pydantic>=2.5.2
-python-multipart>=0.0.6
-email-validator>=1.1.0
+# FastAPI and web server
+fastapi
+uvicorn
+python-multipart
 
-# Database
-sqlalchemy>=2.0.23
-psycopg2-binary>=2.9.9
-alembic>=1.13.0
+# Database and ORM
+sqlalchemy
+psycopg2-binary
+psycopg2
 
-# Authentication and Security
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-pyjwt>=2.8.0
-bcrypt>=3.2.0
+# Authentication and security
+pyjwt
+bcrypt
+passlib
+python-jose
+
+# Data validation and parsing
+pydantic
+pydantic[email]  
+email-validator
+
+# Configuration
+python-dotenv
+
+# Google Generative AI
+google-generativeai
+google-genai
+
+# LangChain (for RAG and other NLP tasks)
+langchain
+langchain-community
+langchain-google-genai
+
+# Vector storage and embeddings
+faiss-cpu
+sentence-transformers
 
 # AWS SDK
-boto3>=1.29.6
+boto3
 
-# Google GenAI
-google-generativeai>=0.3.1
+# Utilities
+tenacity
+python-slugify
 
-# RAG System Dependencies
-chromadb
-crawl4ai
-faiss-cpu
-beautifulsoup4
-selenium
-duckduckgo-search
-apscheduler
-
-# General Utilities
-python-dotenv>=1.0.0
-requests>=2.31.0
-httpx>=0.25.2
-tenacity>=8.2.3
-
-# AI Model Dependencies (Note: some of these may need specific versions depending on your models)
-transformers
-torch
-sentence-transformers
-numpy
-
-# Additional Dependencies
-setuptools
