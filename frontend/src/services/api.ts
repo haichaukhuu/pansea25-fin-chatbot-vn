@@ -36,26 +36,22 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  display_name: string;
+  display_name?: string;
 }
 
-export interface AuthResponse {
-  uid: string;
-  email: string;
-  display_name?: string;
-  email_verified: boolean;
-  id_token: string;
-  refresh_token: string;
-  expires_in: string;
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user_id: string;
 }
 
 export interface UserResponse {
-  uid: string;
+  id: string;
   email: string;
   display_name?: string;
-  email_verified: boolean;
-  created_at?: number;
-  last_sign_in?: number;
+  is_active: boolean;
+  is_admin: boolean;
+  created_at: string;
 }
 
 export interface ApiResponse<T = any> {
@@ -227,13 +223,25 @@ class ApiService {
   }
 
   // Authentication methods
-  async login(request: LoginRequest): Promise<ApiResponse<AuthResponse>> {
+  async login(request: LoginRequest): Promise<ApiResponse<UserResponse>> {
     try {
-      const response = await this.request<AuthResponse>('/api/auth/login', {
+      const loginResponse = await this.request<LoginResponse>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(request),
       });
-      return { success: true, user: response, access_token: response.id_token };
+      
+      // After successful login, get user profile
+      const userResponse = await this.request<UserResponse>('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${loginResponse.access_token}`,
+        },
+      });
+      
+      return { 
+        success: true, 
+        user: userResponse,
+        access_token: loginResponse.access_token 
+      };
     } catch (error: any) {
       console.error('Login failed:', error);
       return { 
@@ -261,8 +269,7 @@ class ApiService {
 
   async verifyToken(token: string): Promise<ApiResponse<UserResponse>> {
     try {
-      const response = await this.request<UserResponse>('/api/auth/verify', {
-        method: 'POST',
+      const response = await this.request<UserResponse>('/api/auth/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -286,6 +293,21 @@ class ApiService {
       return { 
         success: false, 
         message: error.message || 'Failed to get current user' 
+      };
+    }
+  }
+
+  async logout(): Promise<ApiResponse> {
+    try {
+      await this.request<any>('/api/auth/logout', {
+        method: 'POST',
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error('Logout failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Logout failed' 
       };
     }
   }

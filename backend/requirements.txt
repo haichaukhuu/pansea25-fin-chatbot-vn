@@ -1,38 +1,42 @@
-pydantic
+# FastAPI and web server
 fastapi
-transformers
-requests
-python-dotenv
-httpx
-torch
-sentence-transformers
-numpy
 uvicorn
-# langchain
-# langchain-community
+python-multipart
+
+# Database and ORM
+sqlalchemy
+psycopg2-binary
+psycopg2
+
+# Authentication and security
+pyjwt
+bcrypt
+passlib
+python-jose
+
+# Data validation and parsing
+pydantic
+pydantic[email]  
+email-validator
+
+# Configuration
+python-dotenv
+
+# Google Generative AI
+google-generativeai
 google-genai
-python-jose[cryptography] 
-python-multipart 
-google-auth 
-google-auth-oauthlib 
-google-auth-httplib2
-tiktoken
 
-# RAG dependencies
-chromadb
-crawl4ai
+# LangChain (for RAG and other NLP tasks)
+langchain
+langchain-community
+langchain-google-genai
+
+# Vector storage and embeddings
 faiss-cpu
-beautifulsoup4
-selenium
-duckduckgo-search
-apscheduler
 sentence-transformers
-numpy
 
-
-
-# Firebase dependencies
-firebase-admin
+# AWS SDK
+boto3
 
 # Additional dependencies
 email-validator
@@ -44,3 +48,7 @@ amazon-transcribe
 boto3
 websockets
 aws-sdk
+
+# Utilities
+tenacity
+python-slugify

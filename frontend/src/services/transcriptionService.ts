@@ -48,6 +48,7 @@ export class TranscriptionService {
   private static readonly CHUNK_DURATION_MS = 50; 
   private static readonly SAMPLE_RATE = 16000; // 16kHz sample rate
   private static readonly BYTES_PER_SAMPLE = 2; // 16-bit = 2 bytes
+
   private static readonly MAX_CHUNK_SIZE = 32 * 1024; // 32KB AWS limit 
 
   // Supported languages for transcription
@@ -86,7 +87,6 @@ export class TranscriptionService {
     if (this.isRecording || this.websocket || this.audioStream) {
       console.log('Cleaning up previous session before starting new recording...');
       this.stopRecording();
-      // Longer wait to ensure complete cleanup
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
@@ -211,7 +211,7 @@ export class TranscriptionService {
         
         const inputBuffer = event.inputBuffer;
         const inputData = inputBuffer.getChannelData(0);
-        
+       
         // Resample to 16kHz if needed
         const resampledData = this.resampleTo16kHz(inputData, inputBuffer.sampleRate);
         audioBuffer.push(resampledData);
@@ -349,7 +349,7 @@ export class TranscriptionService {
 
   private handleWebSocketMessage(data: TranscriptionResponse) {
     console.log('WebSocket message received:', data.type, data);
-    
+
     switch (data.type) {
       case 'session_started':
         this.sessionId = data.session_id || null;
@@ -427,7 +427,7 @@ export class TranscriptionService {
     
   // Ensure reconnects are disabled during cleanup
   this.shouldReconnect = false;
-
+    
     // Stop recording immediately
     this.isRecording = false;
     
@@ -498,7 +498,6 @@ export class TranscriptionService {
     this.sessionId = null;
     
     console.log('TranscriptionService: Cleanup completed');
-    
     // Delay status change to prevent race conditions with new sessions
     setTimeout(() => {
       if (!this.isRecording && !this.websocket) {

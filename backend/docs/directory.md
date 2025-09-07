@@ -1,136 +1,95 @@
+
 ```
-agrifinhub/
+backend/
+├──  api/                          # API Gateway Layer
+│   ├──  routes/                   # Route handlers
+│   │   ├── auth.py                  # Authentication routes
+│   │   ├── chat.py                  # Chat orchestration routes
+│   │   ├── recommendations.py       # Recommendation engine routes
+│   │   ├── rag.py                   # RAG workflow routes
+│   │   └── users.py                 # User management routes
+│   ├──  middleware/               # Custom middleware
+│   │   ├── cors.py                  # CORS configuration
+│   │   ├── auth_middleware.py       # JWT validation
+│   │   └── rate_limiting.py         # Rate limiting
+│   └── gateway.py                   # Main API gateway entry point
 │
-├── README.md
-├── docker-compose.yml
-├── .env.example
+├──  core/                         # Core App Module
+│   ├──  services/                 # Business logic services
+│   │   ├── user_service.py          # User management logic
+│   │   ├── chat_service.py          # Chat orchestration logic
+│   │   ├── recommendation_service.py # Financial recommendations
+│   │   └── rag_service.py           # RAG workflow logic
+│   └── __init__.py
+│
+├──  external_services/            # Separate Specialized Services
+│   ├──  web_crawler/              # Web scraping service
+│   │   ├── crawler.py               # Main crawler logic
+│   │   ├── scrapers/                # Specific scrapers
+│   │   │   ├── gov_portal.py        # Government portal scraper
+│   │   │   ├── bank_websites.py     # Bank website scraper
+│   │   │   └── news_scraper.py      # Financial news scraper
+│   │   └── __init__.py
+│   ├──  search/                   # Web search service
+│   │   ├── search_engine.py         # Search implementation
+│   │   └── __init__.py
+│   ├──  translation/              # Translation service
+│   │   ├── translator.py            # Vietnamese translation
+│   │   └── __init__.py
+│   └──  speech/                   # Speech-to-text service
+│       ├── speech_processor.py      # Audio processing
+│       └── __init__.py
+│
+├──  database/                     # Data Storage Layer
+│   ├──  connections/              # Database connections
+│   │   ├── rds_postgres.py              
+│   │   ├── s3.py                    
+│   │   ├── vector_db.py             
+│   │   └── neo4j.py                 
+│   ├──  models/                   # Data models & schemas
+│   │   ├── user.py              
+│   │   ├── chat.py
+│   │   ├── financial.py             
+│   │   └── document.py                
+│   └──  repositories/             # Data access layer
+│       ├── user_repository.py       # User data operations
+│       ├── document_repository.py   # Document operations
+│       ├── vector_repository.py     # Vector operations
+│       └── chat_repository.py       # Chat history operations
+│
+├──  ai_models/                    # AI Models Integration
+│   ├── llm_client.py                # LLM API client (OpenAI/Claude)
+│   ├── embeddings.py                # Text embedding service
+│   ├── vector_search.py             # Vector similarity search
+│   └── __init__.py
+│
+├──  utils/                        # Utility functions
+│   ├── logger.py                    # Logging configuration
+│   ├── validators.py                # Input validation
+│   ├── helpers.py                   # Common helper functions
+│   ├── constants.py                 # Application constants
+│   └── vietnamese_utils.py          # Vietnamese text processing
+│
+├──  config/                       # Configuration
+│   ├── settings.py                  # Main configuration
+│   ├── database.py                  # Database configurations
+│   └── __init__.py
+│
+├──  tests/                        # Test files
+│   ├── test_api/                    # API tests
+│   ├── test_services/               # Service tests
+│   └── test_utils/                  # Utility tests
+│
+├──  docs/                         # Documentation
+│   ├── api_docs.md                  # API documentation
+│   └── setup_guide.md               # Setup instructions
+│
+├── __init__.py
 ├── .gitignore
-│
-├── frontend/                          # React.js Frontend
-└── backend/                           # Python FastAPI Backend
-    ├── app/
-    │   ├── __init__.py
-    │   │
-    │   ├── main.py                    # FastAPI application entry
-    │   ├── config.py                  # Configuration management
-    │   ├── dependencies.py            # Dependency injection
-    │   │
-    │   ├── core/                      # Core business logic
-    │   │   ├── __init__.py
-    │   │   ├── security.py            # Firebase auth integration
-    │   │   ├── database.py            # Database connections
-    │   │   └── redis_client.py        # Redis client
-    │   │
-    │   ├── api/                       # API routes
-    │   │   ├── __init__.py
-    │   │   ├── v1/
-    │   │   │   ├── __init__.py
-    │   │   │   ├── auth.py            # Authentication endpoints
-    │   │   │   ├── chat.py            # Chat endpoints
-    │   │   │   ├── websocket.py       # WebSocket connections
-    │   │   │   └── user.py            # User management
-    │   │   └── dependencies.py
-    │   │
-    │   ├── models/                    # Database models
-    │   │   ├── __init__.py
-    │   │   ├── user.py
-    │   │   ├── chat.py
-    │   │   ├── knowledge.py
-    │   │   └── base.py
-    │   │
-    │   ├── agents/                    # Multi-Agent System
-    │   │   ├── __init__.py
-    │   │   │
-    │   │   ├── base/                  # Base agent classes
-    │   │   │   ├── __init__.py
-    │   │   │   ├── agent.py           # Abstract base agent
-    │   │   │   ├── tool.py            # Tool interface
-    │   │   │   └── memory.py          # Memory management
-    │   │   │
-    │   │   ├── orchestrator/          # Agent orchestration
-    │   │   │   ├── __init__.py
-    │   │   │   ├── orchestrator.py    # Main orchestrator
-    │   │   │   ├── router.py          # Request routing
-    │   │   │   └── workflow.py        # Workflow management
-    │   │   │
-    │   │   ├── specialized/           # Specialized agents
-    │   │   │   ├── __init__.py
-    │   │   │   ├── intent_classifier.py
-    │   │   │   ├── rag_agent.py       # RAG retrieval agent
-    │   │   │   ├── web_search_agent.py
-    │   │   │   ├── response_generator.py
-    │   │   │   ├── context_manager.py
-    │   │   │   └── knowledge_ingestion_agent.py
-    │   │   │
-    │   │   └── tools/                 # Agent tools
-    │   │       ├── __init__.py
-    │   │       ├── vector_search.py
-    │   │       ├── web_scraper.py
-    │   │       ├── document_parser.py
-    │   │       └── vietnamese_nlp.py
-    │   │
-    │   ├── services/                  # Business services
-    │   │   ├── __init__.py
-    │   │   ├── chat_service.py
-    │   │   ├── user_service.py 
-    │   │   └── auth_service.py
-    │   │
-    │   ├── data/                      # Data processing
-    │   │   ├── __init__.py
-    │   │   │
-    │   │   ├── ingestion/             # Data ingestion
-    │   │   │   ├── __init__.py
-    │   │   │   ├── scrapers/
-    │   │   │   │   ├── __init__.py
-    │   │   │   │   ├── bank_scraper.py
-    │   │   │   │   ├── government_scraper.py
-    │   │   │   │   └── news_scraper.py
-    │   │   │   │
-    │   │   │   ├── processors/
-    │   │   │   │   ├── __init__.py
-    │   │   │   │   ├── text_processor.py
-    │   │   │   │   ├── document_processor.py
-    │   │   │   │   └── vietnamese_processor.py
-    │   │   │   │
-    │   │   │   └── pipelines/
-    │   │   │       ├── __init__.py
-    │   │   │       ├── ingestion_pipeline.py
-    │   │   │       └── quality_pipeline.py
-    │   │   │
-    │   │   ├── vector_store/          # Vector database operations
-    │   │   │   ├── __init__.py
-    │   │   │   ├── chroma_client.py
-    │   │   │   ├── embeddings.py
-    │   │   │   └── collections.py
-    │   │   │
-    │   │   └── cache/                 # Caching layer
-    │   │       ├── __init__.py
-    │   │       ├── redis_cache.py
-    │   │       └── query_cache.py
-    │   │
-    │   ├── ai_models/        # AI Model Integration
-    │   │   ├── __init__.py
-    │   │   ├── base_model.py
-    │   │   ├── embeddings_model.py
-    │   │   ├── sea_lion_model.py
-    │   │   ├── speech_models.py                # STT/TTS processing
-    │   │   └── gemini_model.py
-    │   │
-    │   └── schemas/                   # Pydantic schemas
-    │       ├── __init__.py
-    │       ├── user.py
-    │       ├── chat.py
-    │       ├── agent.py
-    │       └── knowledge.py
-    │
-    ├── scripts/                       # Utility scripts
-    │   ├── init_db.py
-    │   ├── seed_data.py
-    │   ├── run_ingestion.py
-    │   └── deploy.sh
-    │
-    ├── requirements.txt
-    ├── Dockerfile
-    ├── .env.example
-    └── pyproject.toml
+├── config.py                        # Main config file
+├── env.example                      # Environment variables template
+├── main.py                          # Application entry point
+├── requirements.txt                 # Python dependencies
+└── run.py                          # Development server runner
+
 ```
