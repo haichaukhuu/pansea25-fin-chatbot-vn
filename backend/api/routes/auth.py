@@ -63,7 +63,7 @@ async def register(
 ):
     """Register a new user"""
     try:
-        logger.info(f"Registration attempt for email: {user_data.email}")
+        logger.info(f"Registration attempt with data: {user_data.dict()}")
         return auth_service.register_user(user_data)
     except ValueError as e:
         logger.warning(f"Registration failed: {str(e)}")

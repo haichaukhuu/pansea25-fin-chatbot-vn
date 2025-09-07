@@ -23,7 +23,6 @@ class UserRepository:
             # Create new user
             db_user = User(
                 email=user_data.email,
-                username=user_data.username,
                 password_hash=hashed_password.decode('utf-8'),
                 display_name=user_data.display_name
             )
@@ -45,10 +44,6 @@ class UserRepository:
     def get_user_by_id(self, user_id: uuid.UUID) -> Optional[User]:
         """Get a user by ID."""
         return self.db.query(User).filter(User.id == user_id).first()
-    
-    def get_user_by_username(self, username: str) -> Optional[User]:
-        """Get a user by username."""
-        return self.db.query(User).filter(User.username == username).first()
     
     def get_all_users(self) -> List[User]:
         """Get all users."""
