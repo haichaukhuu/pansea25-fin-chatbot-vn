@@ -5,25 +5,27 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import os
-import logging
 import json
-from dotenv import load_dotenv
+import logging
 
-# Load environment variables
-load_dotenv()
+# Import config
+from config import Config, API_CONFIG, setup_logging
 
-from config import API_CONFIG
+# Set up logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # Import AI model components
 from ai_models.model_factory import ModelFactory
 from ai_models.model_manager import ModelManager
 
-# Import Firebase authentication components
-from auth import auth_router, firebase_config
+# Import database connections
+from database.connections.rds_postgres import postgres_connection
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Import authentication components
+from api.routes.auth import auth_router
+from api.middleware.auth_middleware import JWTBearerMiddleware
+
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -41,19 +43,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Firebase on startup
-@app.on_event("startup")
-async def startup_event():
-    """Initialize Firebase and AI models on startup"""
-    try:
-        # Initialize Firebase Admin SDK
-        firebase_config.initialize_admin_sdk()
-        logger.info("Firebase initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize Firebase: {e}")
-
 # Include authentication router
 app.include_router(auth_router, prefix="/api")
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database and AI models on startup"""
+    try:
+        logger.info("Starting AgriFinHub Chatbot API")
+        
+        # Initialize PostgreSQL connection
+        postgres_connection.initialize()
+        
+        # Create database tables if they don't exist
+        postgres_connection.create_tables()
+        
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.critical(f"Failed to initialize database: {str(e)}")
+        raise
 
 # Security
 security = HTTPBearer()
@@ -85,7 +94,7 @@ try:
     model_manager = ModelManager()
     logger.info("Model manager initialized successfully")
 except Exception as e:
-    logger.error(f"Failed to initialize model manager: {e}")
+    logger.error(f"Failed to initialize model manager: {str(e)}")
     model_manager = None
 
 @app.get("/", response_model=Dict[str, str])
@@ -100,51 +109,69 @@ async def root():
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    if not model_manager:
-        return HealthResponse(
-            status="unhealthy",
-            models={},
-            message="Model manager not initialized"
-        )
+    db_status = "healthy"
+    model_status = {}
+    
+    # Check database health
+    try:
+        with postgres_connection.get_db_session() as db:
+            # Simple query to check DB connection
+            pass
+    except Exception as e:
+        logger.error(f"Database health check failed: {str(e)}")
+        db_status = "unhealthy"
     
     # Check model health
-    model_status = {}
+    if not model_manager:
+        return HealthResponse(
+            status="degraded" if db_status == "healthy" else "unhealthy",
+            models={},
+            message="Model manager not initialized, database status: " + db_status
+        )
+    
     try:
         available_models = model_manager.get_available_models()
         if not available_models:
             return HealthResponse(
-                status="unhealthy",
+                status="degraded" if db_status == "healthy" else "unhealthy",
                 models={},
-                message="No models available"
+                message="No models available, database status: " + db_status
             )
         
         for model_name in available_models:
             is_healthy = await model_manager.check_model_health(model_name)
             model_status[model_name] = is_healthy
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        logger.error(f"Health check failed: {str(e)}")
         model_status = {"error": False}
     
-    overall_status = "healthy" if all(model_status.values()) else "degraded"
-    
+    # Overall status is healthy only if both database and all models are healthy
+    overall_status = "healthy" if db_status == "healthy" and all(model_status.values()) else "degraded"
+    if db_status == "unhealthy" and not all(model_status.values()):
+        overall_status = "unhealthy"
+   
     return HealthResponse(
         status=overall_status,
         models=model_status,
-        message="API is running"
+        message=f"API is running, database status: {db_status}"
     )
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Main chat endpoint"""
     if not model_manager:
+        logger.error("Chat endpoint called but model manager is not available")
         raise HTTPException(status_code=503, detail="AI models not available")
     
     # Check if any models are available
     available_models = model_manager.get_available_models()
     if not available_models:
+        logger.error("No AI models available for chat")
         raise HTTPException(status_code=503, detail="No AI models available")
     
     try:
+        logger.info(f"Chat request received: {request.message[:50]}...")
+        
         # Prepare context
         context = {
             "chat_history": request.chat_history,
@@ -157,6 +184,8 @@ async def chat(request: ChatRequest):
             context=context
         )
         
+        logger.info(f"Chat response generated using model: {response.model_used}")
+
         return ChatResponse(
             response=response.content,
             model_used=response.model_used,
@@ -165,16 +194,19 @@ async def chat(request: ChatRequest):
         )
         
     except Exception as e:
-        logger.error(f"Chat error: {e}")
+        logger.error(f"Chat error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
 
-@app.post("/chat/stream")
+@app.post("/api/chat/stream")
 async def chat_stream(request: ChatRequest):
     """Streaming chat endpoint using Server-Sent Events"""
     if not model_manager:
+        logger.error("Stream chat endpoint called but model manager is not available")
         raise HTTPException(status_code=503, detail="AI models not available")
     
     try:
+        logger.info(f"Streaming chat request received: {request.message[:50]}...")
+        
         # Prepare context
         context = {
             "chat_history": request.chat_history,
@@ -193,9 +225,10 @@ async def chat_stream(request: ChatRequest):
                 
                 # Send completion signal
                 yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                logger.info("Completed streaming response")
                 
             except Exception as e:
-                logger.error(f"Streaming generation error: {e}")
+                logger.error(f"Streaming generation error: {str(e)}", exc_info=True)
                 yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         
         return StreamingResponse(
@@ -210,16 +243,18 @@ async def chat_stream(request: ChatRequest):
         )
         
     except Exception as e:
-        logger.error(f"Streaming chat error: {e}")
+        logger.error(f"Streaming chat error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate streaming response: {str(e)}")
 
-@app.get("/models")
+@app.get("/api/models")
 async def list_models():
     """List available AI models"""
     if not model_manager:
+        logger.error("Models endpoint called but model manager is not available")
         raise HTTPException(status_code=503, detail="Model manager not available")
     
     try:
+        logger.info("Listing available models")
         models = model_manager.get_available_models()
         model_info = {}
         
@@ -236,9 +271,10 @@ async def list_models():
         return {"models": model_info}
         
     except Exception as e:
-        logger.error(f"Failed to list models: {e}")
+        logger.error(f"Failed to list models: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to list models: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

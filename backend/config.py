@@ -1,9 +1,42 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dotenv import load_dotenv
+import logging
+import sys
+
 
 # Load environment variables
 load_dotenv()
+
+class Config:
+    """Application configuration"""
+    
+    # Application settings
+    APP_NAME = os.getenv("APP_NAME", "AgriFinHub")
+    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    
+    # JWT Authentication settings
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "default_insecure_key_please_change")
+    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+    REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+    
+    # Database settings
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = int(os.getenv("DB_PORT", "5432"))
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    RDS_DATABASE_URL = os.getenv("RDS_DATABASE_URL")
+    
+    # AI Model settings
+    GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY")
+    
+    # AWS settings
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
 
 # Model configurations
 MODEL_CONFIGS = {
@@ -68,8 +101,51 @@ AI_CONFIG = {
 
 # Logging Configuration
 LOGGING_CONFIG = {
-    "level": os.getenv("LOG_LEVEL", "INFO"),
-    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        },
+        "detailed": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+            "formatter": "detailed",
+            "stream": sys.stdout
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "INFO",
+            "formatter": "detailed",
+            "filename": "app.log",
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 5
+        }
+    },
+    "loggers": {
+        "": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("LOG_LEVEL", "INFO"),
+            "propagate": True
+        },
+        "uvicorn": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False
+        },
+        "sqlalchemy.engine": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False
+        }
+    }
 }
 
 # Chat Configuration
@@ -88,6 +164,16 @@ Trách nhiệm của bạn:
 Trả lời bằng tiếng Việt, thân thiện và dễ hiểu."""
 }
 
+# LangChain Configuration
+LANGCHAIN_CONFIG = {
+    "use_memory": True,
+    "memory_window_size": 5,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "vector_store": "faiss",
+    "chunk_size": 1000,
+    "chunk_overlap": 200
+}
+
 def get_config() -> Dict[str, Any]:
     """Get all configuration"""
     return {
@@ -95,17 +181,42 @@ def get_config() -> Dict[str, Any]:
         "api": API_CONFIG,
         "ai": AI_CONFIG,
         "logging": LOGGING_CONFIG,
-        "chat": CHAT_CONFIG
+        "chat": CHAT_CONFIG,
+        "langchain": LANGCHAIN_CONFIG
     }
+
+def setup_logging():
+    """Set up logging configuration"""
+    import logging.config
+    logging.config.dictConfig(LOGGING_CONFIG)
+    logger = logging.getLogger(__name__)
+    logger.info("Logging configured successfully")
 
 def validate_config() -> bool:
     """Validate that required configuration is present"""
-    if not AI_CONFIG["api_key"]:
-        print("ERROR: GOOGLE_GENAI_API_KEY environment variable is required")
-        return False
+    errors: List[str] = []
     
-    if not MODEL_CONFIGS:
-        print("ERROR: No model configurations found")
+    # Check JWT secret
+    if not Config.JWT_SECRET_KEY or Config.JWT_SECRET_KEY == "default_insecure_key_please_change":
+        errors.append("JWT_SECRET_KEY is missing or using default (insecure) value")
+    
+    # Check Google GenAI API key
+    if not Config.GOOGLE_GENAI_API_KEY:
+        errors.append("GOOGLE_GENAI_API_KEY is missing")
+    
+    # Check Database URL
+    if not Config.RDS_DATABASE_URL:
+        errors.append("RDS_DATABASE_URL is missing")
+    
+    # Check AWS credentials if needed
+    if not Config.AWS_ACCESS_KEY_ID or not Config.AWS_SECRET_ACCESS_KEY:
+        errors.append("AWS credentials are missing")
+    
+    # Report errors
+    if errors:
+        print("ERROR: Configuration validation failed:")
+        for error in errors:
+            print(f"  - {error}")
         return False
     
     return True
