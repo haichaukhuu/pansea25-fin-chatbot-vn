@@ -1,4 +1,8 @@
 import React, { useState, useRef } from 'react';
+import { TranscriptionService } from '../../services/transcriptionService';
+import type { TranscriptionResult } from '../../services/transcriptionService';
+import { TranscriptionConfirmation } from './TranscriptionConfirmation';
+import { LiveTranscriptPopup } from './LiveTranscriptPopup';
 import { 
   PaperAirplaneIcon,
   PaperClipIcon,
@@ -16,9 +20,20 @@ interface MessageInputProps {
 export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disabled = false }) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showLiveTranscript, setShowLiveTranscript] = useState(false);
+  const [partialTranscript, setPartialTranscript] = useState('');
+  const [finalTranscript, setFinalTranscript] = useState('');
+  const [transcriptionConfidence, setTranscriptionConfidence] = useState<number | undefined>(undefined);
+  const accumulatedTranscriptRef = useRef('');
+  const finalConfidenceScoresRef = useRef<number[]>([]);
+  const sessionEndedRef = useRef(false);
+  const currentSessionIdRef = useRef<string | null>(null);
+  const transcriptionServiceRef = useRef<TranscriptionService | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isStreaming, stopGeneration } = useChat();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,36 +60,126 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
   };
 
   const handleVoiceInput = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setMessage(prev => prev + transcript);
-        setIsRecording(false);
-      };
-
-      recognition.onerror = () => {
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognition.start();
-    } else {
-      alert(t('input.speech_not_supported'));
+    if (isRecording) {
+      transcriptionServiceRef.current?.stopRecording();
+      return;
     }
+
+    // State reset before starting new session
+    const resetAllState = () => {
+      setPartialTranscript('');
+      setFinalTranscript('');
+      setTranscriptionConfidence(undefined);
+      setTranscriptionResult(null);
+      setShowConfirmation(false);
+      setShowLiveTranscript(false);
+      setIsRecording(false);
+      accumulatedTranscriptRef.current = '';
+      finalConfidenceScoresRef.current = [];
+      sessionEndedRef.current = false;
+      currentSessionIdRef.current = null;
+    };
+
+    resetAllState();
+
+    // Stop and cleanup any existing transcription service
+    if (transcriptionServiceRef.current) {
+      console.log('Stopping previous transcription service...');
+      transcriptionServiceRef.current.stopRecording();
+      transcriptionServiceRef.current = null;
+    }
+
+    // Wait a moment for cleanup to complete before starting new session
+    setTimeout(() => {
+      setShowLiveTranscript(true);
+
+      const languageCode = TranscriptionService.getLanguageCode(language);
+      
+      // Create new transcription service instance
+      transcriptionServiceRef.current = new TranscriptionService(
+        (result) => {
+          console.log('Final transcription result received:', result);
+          
+          // Accumulate final results instead of showing confirmation immediately
+          const newAccumulated = accumulatedTranscriptRef.current + (accumulatedTranscriptRef.current ? ' ' : '') + result.transcript;
+          accumulatedTranscriptRef.current = newAccumulated;
+          console.log('Accumulated transcript:', newAccumulated);
+          
+          if (result.confidence) {
+            finalConfidenceScoresRef.current = [...finalConfidenceScoresRef.current, result.confidence];
+          }
+          
+          // Update the final transcript display in live popup
+          setFinalTranscript(prev => prev + (prev ? ' ' : '') + result.transcript);
+        },
+        (error) => {
+          console.error('Transcription error:', error);
+          alert('Transcription error: ' + error);
+          setIsRecording(false);
+          setShowLiveTranscript(false);
+        },
+        (status) => {
+          console.log('Transcription status:', status);
+          
+          // Get current session ID from the service
+          const currentServiceSessionId = transcriptionServiceRef.current?.getSessionId();
+          if (currentServiceSessionId && currentSessionIdRef.current && currentServiceSessionId !== currentSessionIdRef.current) {
+            console.log(`Ignoring status '${status}' from different session: ${currentServiceSessionId} vs ${currentSessionIdRef.current}`);
+            return;
+          }
+          
+          setIsRecording(status === 'recording');
+          
+          // Track when recording starts to set current session
+          if (status === 'recording' && currentServiceSessionId) {
+            currentSessionIdRef.current = currentServiceSessionId;
+            console.log('Set current session ID:', currentServiceSessionId);
+          }
+
+          if (status === 'stopped' && !sessionEndedRef.current && currentServiceSessionId === currentSessionIdRef.current) {
+            sessionEndedRef.current = true;
+            console.log('Processing session end for current session:', currentServiceSessionId);
+            
+            // Small delay to ensure all final results are processed
+            setTimeout(() => {
+              if (accumulatedTranscriptRef.current.trim()) {
+                // Calculate average confidence
+                const avgConfidence = finalConfidenceScoresRef.current.length > 0 
+                  ? finalConfidenceScoresRef.current.reduce((sum, score) => sum + score, 0) / finalConfidenceScoresRef.current.length
+                  : undefined;
+                
+                // Create complete transcription result
+                const completeResult: TranscriptionResult = {
+                  transcript: accumulatedTranscriptRef.current,
+                  confidence: avgConfidence,
+                  is_partial: false,
+                  start_time: undefined,
+                  end_time: undefined,
+                  alternatives: []
+                };
+                
+                console.log('Setting final transcription result:', completeResult);
+                setTranscriptionResult(completeResult);
+                setShowConfirmation(true);
+              }
+              setShowLiveTranscript(false);
+            }, 500);
+          }
+        },
+        (partialResult) => {
+          console.log('Partial transcription result:', partialResult);
+          setPartialTranscript(partialResult.transcript);
+          setTranscriptionConfidence(partialResult.confidence);
+        }
+      );
+      
+      // Start recording with the appropriate language
+      transcriptionServiceRef.current.startRecording({
+        language_code: languageCode,
+        sample_rate: 16000,
+        enable_partial_results: true
+      });
+    }, 500); // Increased delay to ensure complete cleanup
   };
 
   return (
@@ -104,10 +209,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         <button
           type="button"
           onClick={handleVoiceInput}
-          className="p-2 flex items-center justify-center transition-colors"
+          className={`p-2 flex items-center justify-center transition-all duration-200 ${
+            isRecording ? 'animate-pulse' : ''
+          }`}
           style={{
             color: isRecording ? '#FF0000' : '#21A691',
-            backgroundColor: '#eeeeee'
+            backgroundColor: '#eeeeee',
+            transform: isRecording ? 'scale(1.1)' : 'scale(1)'
           }}
           onMouseEnter={(e) => {
             if (!isRecording) e.currentTarget.style.color = '#87DF2C';
@@ -115,10 +223,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           onMouseLeave={(e) => {
             if (!isRecording) e.currentTarget.style.color = '#21A691';
           }}
-          title="Voice input"
+          title={isRecording ? t('transcription.stop') : 'Voice input'}
           disabled={disabled || isStreaming}
         >
-          <MicrophoneIcon className="h-5 w-5" />
+          {isRecording ? <StopIcon className="h-5 w-5" /> : <MicrophoneIcon className="h-5 w-5" />}
         </button>
 
         {/* Message input */}
@@ -180,12 +288,55 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
         accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,image/*"
       />
 
-      {isRecording && (
-        <div className="mt-2 flex items-center space-x-2" style={{ color: '#FF0000' }}>
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#FF0000' }}></div>
-          <span className="text-sm">{t('input.recording')}</span>
-        </div>
-      )}
+      {/* Live Transcript Popup */}
+      <LiveTranscriptPopup
+        isVisible={showLiveTranscript}
+        isRecording={isRecording}
+        partialTranscript={partialTranscript}
+        finalTranscript={finalTranscript}
+        confidence={transcriptionConfidence}
+        onStop={() => {
+          transcriptionServiceRef.current?.stopRecording();
+        }}
+        onClose={() => {
+          console.log('Live transcript popup close requested');
+          setShowLiveTranscript(false);
+          if (isRecording) {
+            console.log('Stopping recording due to popup close');
+            transcriptionServiceRef.current?.stopRecording();
+          }
+        }}
+      />
+
+      {/* Transcription confirmation dialog */}
+      <TranscriptionConfirmation
+        transcript={transcriptionResult?.transcript || ''}
+        // confidence={transcriptionResult?.confidence}
+        isVisible={showConfirmation}
+        onConfirm={(finalText) => {
+          setMessage(finalText);
+          setShowConfirmation(false);
+          setTranscriptionResult(null);
+          setPartialTranscript('');
+          setFinalTranscript('');
+          setTranscriptionConfidence(undefined);
+          accumulatedTranscriptRef.current = '';
+          finalConfidenceScoresRef.current = [];
+          sessionEndedRef.current = false;
+          currentSessionIdRef.current = null;
+        }}
+        onCancel={() => {
+          setShowConfirmation(false);
+          setTranscriptionResult(null);
+          setPartialTranscript('');
+          setFinalTranscript('');
+          setTranscriptionConfidence(undefined);
+          accumulatedTranscriptRef.current = '';
+          finalConfidenceScoresRef.current = [];
+          sessionEndedRef.current = false;
+          currentSessionIdRef.current = null;
+        }}
+      />
     </div>
   );
 };

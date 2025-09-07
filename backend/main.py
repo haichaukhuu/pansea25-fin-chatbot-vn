@@ -24,6 +24,7 @@ from database.connections.rds_postgres import postgres_connection
 
 # Import authentication components
 from api.routes.auth import auth_router
+from api.routes.chat import chat_router, set_model_manager
 from api.middleware.auth_middleware import JWTBearerMiddleware
 
 
@@ -44,7 +45,8 @@ app.add_middleware(
 )
 
 # Include authentication router
-app.include_router(auth_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")  
+app.include_router(chat_router)
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -68,22 +70,6 @@ async def startup_event():
 security = HTTPBearer()
 
 # Pydantic models
-class ChatMessage(BaseModel):
-    role: str  # "user" or "bot"
-    content: str
-    timestamp: Optional[str] = None
-
-class ChatRequest(BaseModel):
-    message: str
-    chat_history: Optional[List[ChatMessage]] = []
-    user_profile: Optional[Dict[str, Any]] = {}
-
-class ChatResponse(BaseModel):
-    response: str
-    model_used: str
-    confidence_score: float
-    usage_stats: Dict[str, Any]
-
 class HealthResponse(BaseModel):
     status: str
     models: Dict[str, bool]
@@ -93,6 +79,7 @@ class HealthResponse(BaseModel):
 try:
     model_manager = ModelManager()
     logger.info("Model manager initialized successfully")
+    set_model_manager(model_manager)
 except Exception as e:
     logger.error(f"Failed to initialize model manager: {str(e)}")
     model_manager = None
@@ -156,97 +143,33 @@ async def health_check():
         message=f"API is running, database status: {db_status}"
     )
 
-@app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Main chat endpoint"""
-    if not model_manager:
-        logger.error("Chat endpoint called but model manager is not available")
-        raise HTTPException(status_code=503, detail="AI models not available")
-    
-    # Check if any models are available
-    available_models = model_manager.get_available_models()
-    if not available_models:
-        logger.error("No AI models available for chat")
-        raise HTTPException(status_code=503, detail="No AI models available")
-    
-    try:
-        logger.info(f"Chat request received: {request.message[:50]}...")
-        
-        # Prepare context
-        context = {
-            "chat_history": request.chat_history,
-            "user_profile": request.user_profile or {}
-        }
-        
-        # Generate response using the primary model
-        response = await model_manager.generate_response(
-            prompt=request.message,
-            context=context
-        )
-        
-        logger.info(f"Chat response generated using model: {response.model_used}")
-
-        return ChatResponse(
-            response=response.content,
-            model_used=response.model_used,
-            confidence_score=response.confidence_score,
-            usage_stats=response.usage_stats
-        )
-        
-    except Exception as e:
-        logger.error(f"Chat error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
-
-@app.post("/api/chat/stream")
-async def chat_stream(request: ChatRequest):
-    """Streaming chat endpoint using Server-Sent Events"""
-    if not model_manager:
-        logger.error("Stream chat endpoint called but model manager is not available")
-        raise HTTPException(status_code=503, detail="AI models not available")
-    
-    try:
-        logger.info(f"Streaming chat request received: {request.message[:50]}...")
-        
-        # Prepare context
-        context = {
-            "chat_history": request.chat_history,
-            "user_profile": request.user_profile or {}
-        }
-        
-        # Generate streaming response
-        async def generate():
-            try:
-                async for chunk in model_manager.generate_streaming_response(
-                    prompt=request.message,
-                    context=context
-                ):
-                    # Format as SSE data
-                    yield f"data: {json.dumps({'content': chunk, 'type': 'content'})}\n\n"
-                
-                # Send completion signal
-                yield f"data: {json.dumps({'type': 'done'})}\n\n"
-                logger.info("Completed streaming response")
-                
-            except Exception as e:
-                logger.error(f"Streaming generation error: {str(e)}", exc_info=True)
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        
-        return StreamingResponse(
-            generate(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Streaming chat error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to generate streaming response: {str(e)}")
-
 @app.get("/api/models")
+async def list_models():
+    """List available AI models"""
+    if not model_manager:
+        logger.error("Models endpoint called but model manager is not available")
+        raise HTTPException(status_code=503, detail="Model manager not available")
+    
+    try:
+        logger.info("Listing available models")
+        models = model_manager.get_available_models()
+        model_info = {}
+        
+        for model_name in models:
+            model = model_manager.get_model(model_name)
+            if model:
+                model_info[model_name] = {
+                    "name": model.config.name,
+                    "model_id": model.config.model_id,
+                    "is_available": model.is_available,
+                    "capabilities": [cap.value for cap in model.config.capabilities]
+                }
+        
+        return {"models": model_info}
+        
+    except Exception as e:
+        logger.error(f"Failed to list models: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to list models: {str(e)}")
 async def list_models():
     """List available AI models"""
     if not model_manager:

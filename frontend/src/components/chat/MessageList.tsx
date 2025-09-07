@@ -3,7 +3,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useChat } from '../../context/ChatContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { TypingIndicator } from '../common/TypingIndicator';
 import type { Message } from '../../types';
 
 interface MessageListProps {
@@ -76,9 +75,6 @@ export const MessageList: React.FC<MessageListProps> = ({ className = '' }) => {
       {currentChat.messages.map((message) => (
         <MessageBubble key={message.id} message={message} />
       ))}
-      {isStreaming && (
-        <TypingIndicator />
-      )}
       <div ref={messagesEndRef} />
     </div>
   );

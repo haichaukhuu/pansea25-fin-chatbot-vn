@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // For token verification, if user has a valid token, they're an existing user
         const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted') === 'true';
         const user: User = {
-          id: result.user.uid,
+          id: result.user.id,
           email: result.user.email,
           name: result.user.display_name || result.user.email.split('@')[0],
           hasCompletedOnboarding: hasCompletedOnboarding // Use localStorage value for token verification
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (result.success && result.user && result.access_token) {
         // For login, we assume the user is an existing user who has completed onboarding
         const user: User = {
-          id: result.user.uid,
+          id: result.user.id,
           email: result.user.email,
           name: result.user.display_name || email.split('@')[0],
           hasCompletedOnboarding: true // Existing users have completed onboarding
@@ -100,21 +100,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (result.success && result.user) {
-        const user: User = {
-          id: result.user.uid,
-          email: result.user.email,
-          name: result.user.display_name || name,
-          hasCompletedOnboarding: false // New users haven't completed onboarding
-        };
+        // After successful registration, login to get access token
+        const loginResult = await apiService.login({ email, password });
         
-        setAuthState({
-          user,
-          isAuthenticated: true
-        });
-        
-        // Set as new user for onboarding flow
-        setIsNewUser(true);
-        return true;
+        if (loginResult.success && loginResult.access_token) {
+          const user: User = {
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.display_name || name,
+            hasCompletedOnboarding: false // New users haven't completed onboarding
+          };
+          
+          // Store auth data for new user
+          localStorage.setItem('authToken', loginResult.access_token);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          
+          setAuthState({
+            user,
+            isAuthenticated: true
+          });
+          
+          // Set as new user for onboarding flow
+          setIsNewUser(true);
+          return true;
+        }
       }
       return false;
     } catch (error) {
@@ -137,9 +146,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setIsNewUser(false);
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      localStorage.setItem('onboardingCompleted', 'true');
     }
   };
   const logout = () => {
+    // Call backend logout to clear refresh token cookie
+    apiService.logout().catch(error => {
+      console.warn('Backend logout failed:', error);
+    });
+    
     // Clear stored auth data
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
