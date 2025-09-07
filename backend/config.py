@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import logging
 import sys
 
+
 # Load environment variables
 load_dotenv()
 
@@ -98,7 +99,6 @@ AI_CONFIG = {
     }
 }
 
-
 # Logging Configuration
 LOGGING_CONFIG = {
     "version": 1,
@@ -147,8 +147,6 @@ LOGGING_CONFIG = {
         }
     }
 }
-
-
 
 # Chat Configuration
 CHAT_CONFIG = {

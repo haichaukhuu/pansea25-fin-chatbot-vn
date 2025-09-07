@@ -1,4 +1,3 @@
-# AgriFinHub Backend Directory Structure
 
 ```
 backend/
@@ -92,4 +91,5 @@ backend/
 ├── main.py                          # Application entry point
 ├── requirements.txt                 # Python dependencies
 └── run.py                          # Development server runner
+
 ```

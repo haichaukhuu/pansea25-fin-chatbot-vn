@@ -26,6 +26,7 @@ from database.connections.rds_postgres import postgres_connection
 from api.routes.auth import auth_router
 from api.middleware.auth_middleware import JWTBearerMiddleware
 
+
 # Initialize FastAPI app
 app = FastAPI(
     title="AgriFinHub Chatbot API",
@@ -62,8 +63,6 @@ async def startup_event():
     except Exception as e:
         logger.critical(f"Failed to initialize database: {str(e)}")
         raise
-
-
 
 # Security
 security = HTTPBearer()
@@ -150,7 +149,7 @@ async def health_check():
     overall_status = "healthy" if db_status == "healthy" and all(model_status.values()) else "degraded"
     if db_status == "unhealthy" and not all(model_status.values()):
         overall_status = "unhealthy"
-    
+   
     return HealthResponse(
         status=overall_status,
         models=model_status,
@@ -186,7 +185,7 @@ async def chat(request: ChatRequest):
         )
         
         logger.info(f"Chat response generated using model: {response.model_used}")
-        
+
         return ChatResponse(
             response=response.content,
             model_used=response.model_used,
@@ -278,3 +277,4 @@ async def list_models():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
