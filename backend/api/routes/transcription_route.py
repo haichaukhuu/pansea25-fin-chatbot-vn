@@ -9,8 +9,8 @@ import base64
 import asyncio
 from typing import Optional
 
-from .service import transcription_service
-from .models import TranscriptionRequest, TranscriptionResponse, TranscriptionConfirmation
+from core.services.transcription_service import transcription_service
+from core.models.transcription_models import TranscriptionRequest, TranscriptionResponse, TranscriptionConfirmation
 
 logger = logging.getLogger(__name__)
 

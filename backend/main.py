@@ -28,7 +28,7 @@ from api.routes.chat import chat_router, set_model_manager
 from api.middleware.auth_middleware import JWTBearerMiddleware
 
 # Import transcription components
-from transcription.routes import router as transcription_router
+from api.routes.transcription_route import router as transcription_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

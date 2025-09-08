@@ -196,9 +196,8 @@ def get_config() -> Dict[str, Any]:
         "ai": AI_CONFIG,
         "logging": LOGGING_CONFIG,
         "chat": CHAT_CONFIG,
-        "aws": AWS_CONFIG
+        "aws": AWS_CONFIG,
         "langchain": LANGCHAIN_CONFIG
-
     }
 
 def setup_logging():

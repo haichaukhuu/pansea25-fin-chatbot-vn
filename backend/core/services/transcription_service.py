@@ -13,16 +13,15 @@ from amazon_transcribe.model import TranscriptEvent
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 
-from .models import TranscriptionResult, TranscriptionStatus, TranscriptionResponse
+from ..models.transcription_models import TranscriptionResult, TranscriptionStatus, TranscriptionResponse
 
-# Import from config - handle both relative and absolute imports
-try:
-    from ..config import get_aws_transcribe_config
-except ImportError:
-    import sys
-    import os
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from config import get_aws_transcribe_config
+# Import from config
+import sys
+import os
+# Add the backend directory to path to import config
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(backend_dir)
+from config import get_aws_transcribe_config
 
 logger = logging.getLogger(__name__)
 
