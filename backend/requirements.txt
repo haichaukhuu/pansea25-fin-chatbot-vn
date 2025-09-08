@@ -38,6 +38,17 @@ sentence-transformers
 # AWS SDK
 boto3
 
+# Additional dependencies
+email-validator
+passlib[bcrypt]
+setuptools
+
+# Amazon Transcribe dependencies
+amazon-transcribe
+boto3
+websockets
+aws-sdk
+
 # Utilities
 tenacity
 python-slugify

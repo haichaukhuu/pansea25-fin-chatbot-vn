@@ -27,6 +27,12 @@ from api.routes.auth import auth_router
 from api.routes.chat import chat_router, set_model_manager
 from api.middleware.auth_middleware import JWTBearerMiddleware
 
+# Import transcription components
+from transcription.routes import router as transcription_router
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -65,6 +71,9 @@ async def startup_event():
     except Exception as e:
         logger.critical(f"Failed to initialize database: {str(e)}")
         raise
+
+# Include transcription router
+app.include_router(transcription_router)
 
 # Security
 security = HTTPBearer()

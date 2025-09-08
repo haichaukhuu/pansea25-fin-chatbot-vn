@@ -148,6 +148,20 @@ LOGGING_CONFIG = {
     }
 }
 
+# AWS Configuration
+AWS_CONFIG = {
+    "transcribe": {
+        "access_key_id": os.getenv("AWS_TRANSCRIBE_ACCESS_KEY_ID"),
+        "secret_access_key": os.getenv("AWS_TRANSCRIBE_SECRET_ACCESS_KEY"),
+        "region": os.getenv("AWS_REGION", "ap-southeast-1")
+    },
+    "database": {
+        "access_key_id": os.getenv("AWS_DATABASE_ACCESS_KEY_ID"),
+        "secret_access_key": os.getenv("AWS_DATABASE_SECRET_ACCESS_KEY"),
+        "region": os.getenv("AWS_REGION", "ap-southeast-1")
+    }
+}
+
 # Chat Configuration
 CHAT_CONFIG = {
     "max_history_length": 10,
@@ -182,7 +196,9 @@ def get_config() -> Dict[str, Any]:
         "ai": AI_CONFIG,
         "logging": LOGGING_CONFIG,
         "chat": CHAT_CONFIG,
+        "aws": AWS_CONFIG
         "langchain": LANGCHAIN_CONFIG
+
     }
 
 def setup_logging():
@@ -219,4 +235,32 @@ def validate_config() -> bool:
             print(f"  - {error}")
         return False
     
+    # Check AWS Transcribe credentials if being used
+    transcribe_config = AWS_CONFIG["transcribe"]
+    if transcribe_config["access_key_id"] and not transcribe_config["secret_access_key"]:
+        print("ERROR: AWS_TRANSCRIBE_SECRET_ACCESS_KEY is required when AWS_TRANSCRIBE_ACCESS_KEY_ID is provided")
+        return False
+    
+    if transcribe_config["secret_access_key"] and not transcribe_config["access_key_id"]:
+        print("ERROR: AWS_TRANSCRIBE_ACCESS_KEY_ID is required when AWS_TRANSCRIBE_SECRET_ACCESS_KEY is provided")
+        return False
+    
+    # Check AWS Database credentials if being used
+    database_config = AWS_CONFIG["database"]
+    if database_config["access_key_id"] and not database_config["secret_access_key"]:
+        print("ERROR: AWS_DATABASE_SECRET_ACCESS_KEY is required when AWS_DATABASE_ACCESS_KEY_ID is provided")
+        return False
+    
+    if database_config["secret_access_key"] and not database_config["access_key_id"]:
+        print("ERROR: AWS_DATABASE_ACCESS_KEY_ID is required when AWS_DATABASE_SECRET_ACCESS_KEY is provided")
+        return False
+    
     return True
+
+
+def get_aws_transcribe_config() -> Dict[str, str]:
+    return AWS_CONFIG["transcribe"]
+
+
+def get_aws_database_config() -> Dict[str, str]:
+    return AWS_CONFIG["database"]

@@ -63,6 +63,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
     if (isRecording) {
       transcriptionServiceRef.current?.stopRecording();
       return;
+
     }
 
     // State reset before starting new session
@@ -96,6 +97,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       const languageCode = TranscriptionService.getLanguageCode(language);
       
       // Create new transcription service instance
+
       transcriptionServiceRef.current = new TranscriptionService(
         (result) => {
           console.log('Final transcription result received:', result);
@@ -104,7 +106,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           const newAccumulated = accumulatedTranscriptRef.current + (accumulatedTranscriptRef.current ? ' ' : '') + result.transcript;
           accumulatedTranscriptRef.current = newAccumulated;
           console.log('Accumulated transcript:', newAccumulated);
-          
+
+          // Accumulate confidence scores for averaging
           if (result.confidence) {
             finalConfidenceScoresRef.current = [...finalConfidenceScoresRef.current, result.confidence];
           }
@@ -123,6 +126,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
           
           // Get current session ID from the service
           const currentServiceSessionId = transcriptionServiceRef.current?.getSessionId();
+
+          // Only process status changes for the current session
+
           if (currentServiceSessionId && currentSessionIdRef.current && currentServiceSessionId !== currentSessionIdRef.current) {
             console.log(`Ignoring status '${status}' from different session: ${currentServiceSessionId} vs ${currentSessionIdRef.current}`);
             return;
@@ -135,6 +141,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
             currentSessionIdRef.current = currentServiceSessionId;
             console.log('Set current session ID:', currentServiceSessionId);
           }
+          
+          // Only hide live transcript and show confirmation when recording is fully stopped
 
           if (status === 'stopped' && !sessionEndedRef.current && currentServiceSessionId === currentSessionIdRef.current) {
             sessionEndedRef.current = true;
@@ -311,7 +319,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, disab
       {/* Transcription confirmation dialog */}
       <TranscriptionConfirmation
         transcript={transcriptionResult?.transcript || ''}
-        // confidence={transcriptionResult?.confidence}
+        confidence={transcriptionResult?.confidence}
         isVisible={showConfirmation}
         onConfirm={(finalText) => {
           setMessage(finalText);

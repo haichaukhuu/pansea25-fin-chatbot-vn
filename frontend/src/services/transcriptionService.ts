@@ -42,15 +42,14 @@ export class TranscriptionService {
   private onError: (error: string) => void;
   private onStatusChange: (status: string) => void;
   private debugMode: boolean = false;
-  private silenceTimer: NodeJS.Timeout | null = null;
   private shouldReconnect: boolean = false;
 
   // Audio processing configuration
   private static readonly CHUNK_DURATION_MS = 50; 
   private static readonly SAMPLE_RATE = 16000; // 16kHz sample rate
   private static readonly BYTES_PER_SAMPLE = 2; // 16-bit = 2 bytes
-  private static readonly MAX_CHUNK_SIZE = 32 * 1024; // 32KB AWS limit
-  private static readonly SILENCE_TIMEOUT_MS = 5000; // 5 seconds silence timeout 
+
+  private static readonly MAX_CHUNK_SIZE = 32 * 1024; // 32KB AWS limit 
 
   // Supported languages for transcription
   static readonly SUPPORTED_LANGUAGES: LanguageConfig[] = [
@@ -88,7 +87,7 @@ export class TranscriptionService {
     if (this.isRecording || this.websocket || this.audioStream) {
       console.log('Cleaning up previous session before starting new recording...');
       this.stopRecording();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     let retryCount = 0;
@@ -160,7 +159,6 @@ export class TranscriptionService {
           }
         };
 
-        // Set up MediaRecorder for audio capture
         this.setupMediaRecorder();
 
       } catch (error) {
@@ -182,7 +180,6 @@ export class TranscriptionService {
     if (!this.audioStream) return;
 
     try {
-      // Use AudioContext for better control over audio processing
       this.setupAudioContext();
 
     } catch (error) {
@@ -196,7 +193,6 @@ export class TranscriptionService {
 
   private setupAudioContext() {
     try {
-      // AudioContext for processing
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       // audio from microphone
@@ -215,13 +211,7 @@ export class TranscriptionService {
         
         const inputBuffer = event.inputBuffer;
         const inputData = inputBuffer.getChannelData(0);
-        
-        // Check for audio activity 
-        const volume = Math.sqrt(inputData.reduce((sum, sample) => sum + sample * sample, 0) / inputData.length);
-        if (volume > 0.01) {
-          this.resetSilenceTimer();
-        }
-        
+       
         // Resample to 16kHz if needed
         const resampledData = this.resampleTo16kHz(inputData, inputBuffer.sampleRate);
         audioBuffer.push(resampledData);
@@ -251,33 +241,11 @@ export class TranscriptionService {
       
       console.log('AudioContext setup completed');
       this.isRecording = true;
-      this.startSilenceTimer();
       this.onStatusChange('recording');
       
     } catch (error) {
       console.error('Error setting up AudioContext:', error);
       this.onError('Failed to set up audio processing');
-    }
-  }
-
-  private startSilenceTimer() {
-    this.clearSilenceTimer();
-    this.silenceTimer = setTimeout(() => {
-      console.log('Silence timeout reached, stopping recording');
-      this.stopRecording();
-    }, TranscriptionService.SILENCE_TIMEOUT_MS);
-  }
-
-  private resetSilenceTimer() {
-    if (this.isRecording) {
-      this.startSilenceTimer();
-    }
-  }
-
-  private clearSilenceTimer() {
-    if (this.silenceTimer) {
-      clearTimeout(this.silenceTimer);
-      this.silenceTimer = null;
     }
   }
 
@@ -380,6 +348,8 @@ export class TranscriptionService {
   }
 
   private handleWebSocketMessage(data: TranscriptionResponse) {
+    console.log('WebSocket message received:', data.type, data);
+
     switch (data.type) {
       case 'session_started':
         this.sessionId = data.session_id || null;
@@ -388,15 +358,13 @@ export class TranscriptionService {
 
       case 'transcription_result':
         if (data.result) {
-          // Reset silence timer when we get results
-          this.resetSilenceTimer();
-          
           if (data.result.is_partial) {
             // Handle partial results for live display
+            console.log('Handling partial result:', data.result.transcript);
             this.onPartialResult(data.result);
           } else {
             // Handle final results
-            console.log('Received final transcription result:', data.result);
+            console.log('Received final transcription result:', data.result.transcript);
             this.onTranscriptionResult(data.result);
           }
         }
@@ -411,11 +379,12 @@ export class TranscriptionService {
         break;
 
       case 'error':
+        console.error('Transcription error from backend:', data.error_message);
         this.onError(data.error_message || 'Unknown transcription error');
         break;
 
       default:
-        console.log('Unknown message type:', data.type);
+        console.log('Unknown message type:', data.type, data);
     }
   }
 
@@ -441,7 +410,7 @@ export class TranscriptionService {
         // Give backend time to process end_session before closing
         setTimeout(() => {
           this.cleanup();
-        }, 100);
+        }, 200); 
       } else {
         // If websocket is not open, cleanup immediately
         this.cleanup();
@@ -449,7 +418,6 @@ export class TranscriptionService {
       
     } catch (error) {
       console.error('Error stopping recording:', error);
-      // Force cleanup even if there's an error
       this.cleanup();
     }
   }
@@ -459,9 +427,6 @@ export class TranscriptionService {
     
   // Ensure reconnects are disabled during cleanup
   this.shouldReconnect = false;
-
-    // Clear silence timer
-    this.clearSilenceTimer();
     
     // Stop recording immediately
     this.isRecording = false;
@@ -533,7 +498,12 @@ export class TranscriptionService {
     this.sessionId = null;
     
     console.log('TranscriptionService: Cleanup completed');
-    this.onStatusChange('stopped');
+    // Delay status change to prevent race conditions with new sessions
+    setTimeout(() => {
+      if (!this.isRecording && !this.websocket) {
+        this.onStatusChange('stopped');
+      }
+    }, 100);
   }
 
   getIsRecording(): boolean {
