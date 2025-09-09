@@ -6,6 +6,7 @@ import logging
 from core.services.auth_service import AuthService
 from database.repositories.user_repository import UserRepository
 from database.connections.rds_postgres import postgres_connection
+from database.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -104,3 +105,26 @@ def get_current_user_factory() -> Callable:
             )
         return user
     return get_current_user
+
+
+# JWT Bearer instance for authentication
+jwt_bearer = JWTBearerMiddleware()
+
+
+async def get_current_user(request: Request) -> 'User':
+    """
+    Get the current authenticated user.
+    """
+    # First verify the JWT token - this will populate request.state.user
+    await jwt_bearer(request)
+    
+    # Get the user from request state (populated by jwt_bearer verification)
+    user = getattr(request.state, "user", None)
+    if not user:
+        logger.warning("Authenticated user required but not found in request state")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+    
+    return user

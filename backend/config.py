@@ -32,11 +32,10 @@ class Config:
     
     # AI Model settings
     GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY")
-    
-    # AWS settings
-    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
+        
+    # DynamoDB settings
+    DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "Preference")
+    DYNAMODB_REGION = os.getenv("DYNAMODB_REGION", "ap-southeast-1")
 
 # Model configurations
 MODEL_CONFIGS = {
@@ -159,6 +158,12 @@ AWS_CONFIG = {
         "access_key_id": os.getenv("AWS_DATABASE_ACCESS_KEY_ID"),
         "secret_access_key": os.getenv("AWS_DATABASE_SECRET_ACCESS_KEY"),
         "region": os.getenv("AWS_REGION", "ap-southeast-1")
+    },
+    "dynamodb": {
+        "access_key_id": os.getenv("AWS_DYNAMODB_ACCESS_KEY_ID"),
+        "secret_access_key": os.getenv("AWS_DYNAMODB_SECRET_ACCESS_KEY"),
+        "region": os.getenv("DYNAMODB_REGION", "ap-southeast-1"),
+        "table_name": os.getenv("DYNAMODB_TABLE_NAME", "Preference")
     }
 }
 
@@ -222,11 +227,7 @@ def validate_config() -> bool:
     # Check Database URL
     if not Config.RDS_DATABASE_URL:
         errors.append("RDS_DATABASE_URL is missing")
-    
-    # Check AWS credentials if needed
-    if not Config.AWS_ACCESS_KEY_ID or not Config.AWS_SECRET_ACCESS_KEY:
-        errors.append("AWS credentials are missing")
-    
+        
     # Report errors
     if errors:
         print("ERROR: Configuration validation failed:")
@@ -263,3 +264,7 @@ def get_aws_transcribe_config() -> Dict[str, str]:
 
 def get_aws_database_config() -> Dict[str, str]:
     return AWS_CONFIG["database"]
+
+
+def get_aws_dynamodb_config() -> Dict[str, str]:
+    return AWS_CONFIG["dynamodb"]

@@ -25,6 +25,7 @@ from database.connections.rds_postgres import postgres_connection
 # Import authentication components
 from api.routes.auth import auth_router
 from api.routes.chat import chat_router, set_model_manager
+from api.routes.preferences import preferences_router
 from api.middleware.auth_middleware import JWTBearerMiddleware
 
 # Import transcription components
@@ -50,9 +51,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include authentication router
+# Include routers
 app.include_router(auth_router, prefix="/api")  
 app.include_router(chat_router)
+app.include_router(preferences_router, prefix="/api")
 
 # Initialize database on startup
 @app.on_event("startup")

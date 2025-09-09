@@ -61,6 +61,39 @@ export interface ApiResponse<T = any> {
   access_token?: string;
 }
 
+// User Preferences interfaces
+export interface UserPreferences {
+  agriculturalActivity: string[];
+  cropType: string;
+  livestockType: string;
+  location: string;
+  farmScale: string;
+  supportNeeds: string[];
+  financialKnowledge: string;
+}
+
+export interface PreferenceCreateRequest {
+  questionnaire_answer: UserPreferences;
+}
+
+export interface PreferenceUpdateRequest {
+  questionnaire_answer?: UserPreferences;
+}
+
+export interface UserPreferenceData {
+  user_id: string;
+  user_email: string;
+  questionnaire_answer: UserPreferences;
+  recorded_on: string;
+  updated_on: string;
+}
+
+export interface PreferenceResponse {
+  success: boolean;
+  message: string;
+  data?: UserPreferenceData;
+}
+
 class ApiService {
   private baseUrl: string;
   private abortController: AbortController | null = null;
@@ -308,6 +341,146 @@ class ApiService {
       return { 
         success: false, 
         message: error.message || 'Logout failed' 
+      };
+    }
+  }
+
+  // User Preferences methods
+  async createPreferences(preferences: UserPreferences): Promise<ApiResponse<PreferenceResponse>> {
+    try {
+      const requestData: PreferenceCreateRequest = {
+        questionnaire_answer: preferences
+      };
+      
+      const response = await this.request<PreferenceResponse>('/api/preferences/', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      });
+      
+      return { 
+        success: response.success, 
+        message: response.message,
+        user: response
+      };
+    } catch (error: any) {
+      console.error('Create preferences failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to save preferences' 
+      };
+    }
+  }
+
+  async getPreferences(): Promise<ApiResponse<PreferenceResponse>> {
+    try {
+      const response = await this.request<PreferenceResponse>('/api/preferences/');
+      return { 
+        success: response.success, 
+        message: response.message,
+        user: response
+      };
+    } catch (error: any) {
+      console.error('Get preferences failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to get preferences' 
+      };
+    }
+  }
+
+  async updatePreferences(preferences: UserPreferences): Promise<ApiResponse<PreferenceResponse>> {
+    try {
+      const requestData: PreferenceUpdateRequest = {
+        questionnaire_answer: preferences
+      };
+      
+      const response = await this.request<PreferenceResponse>('/api/preferences/', {
+        method: 'PUT',
+        body: JSON.stringify(requestData),
+      });
+      
+      return { 
+        success: response.success, 
+        message: response.message,
+        user: response
+      };
+    } catch (error: any) {
+      console.error('Update preferences failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to update preferences' 
+      };
+    }
+  }
+
+  async deletePreferences(): Promise<ApiResponse<PreferenceResponse>> {
+    try {
+      const response = await this.request<PreferenceResponse>('/api/preferences/', {
+        method: 'DELETE',
+      });
+      
+      return { 
+        success: response.success, 
+        message: response.message,
+        user: response
+      };
+    } catch (error: any) {
+      console.error('Delete preferences failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to delete preferences' 
+      };
+    }
+  }
+
+  async upsertPreferences(preferences: UserPreferences): Promise<ApiResponse<PreferenceResponse>> {
+    try {
+      const requestData: PreferenceCreateRequest = {
+        questionnaire_answer: preferences
+      };
+      
+      const response = await this.request<PreferenceResponse>('/api/preferences/upsert', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      });
+      
+      return { 
+        success: response.success, 
+        message: response.message,
+        user: response
+      };
+    } catch (error: any) {
+      console.error('Upsert preferences failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to save preferences' 
+      };
+    }
+  }
+
+  async checkPreferencesExist(): Promise<{ exists: boolean; user_id: string; message: string }> {
+    try {
+      const response = await this.request<{ exists: boolean; user_id: string; message: string }>('/api/preferences/exists');
+      return response;
+    } catch (error: any) {
+      console.error('Check preferences existence failed:', error);
+      return { 
+        exists: false, 
+        user_id: '', 
+        message: error.message || 'Failed to check preferences' 
+      };
+    }
+  }
+
+  async getPreferencesHealth(): Promise<any> {
+    try {
+      const response = await this.request<any>('/api/preferences/health');
+      return response;
+    } catch (error: any) {
+      console.error('Preferences health check failed:', error);
+      return { 
+        status: 'unhealthy', 
+        error: error.message || 'Health check failed' 
       };
     }
   }
