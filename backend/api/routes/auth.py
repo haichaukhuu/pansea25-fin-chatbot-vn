@@ -69,6 +69,9 @@ async def register(
         logger.warning(f"Registration failed: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.error(f"Unexpected registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+    except Exception as e:
         logger.error(f"Unexpected error during registration: {str(e)}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 

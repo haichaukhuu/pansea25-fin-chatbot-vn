@@ -27,22 +27,27 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/\d/.test(password)) {
+      setError('Password must contain at least one digit');
       return;
     }
 
     setLoading(true);
 
     try {
-      const success = await register(email, password, name);
+      const [success, errorMsg] = await register(email, password, name);
       if (success) {
         onSuccess();
       } else {
-        setError('Registration failed. Please try again.');
+        setError(errorMsg || 'Registration failed. Please try again.');
       }
-    } catch (err) {
-      setError('An error occurred during registration');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration');
     } finally {
       setLoading(false);
     }
