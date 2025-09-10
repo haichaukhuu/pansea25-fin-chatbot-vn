@@ -1,7 +1,3 @@
-"""
-DynamoDB connection management for user preferences storage.
-"""
-
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 import logging
@@ -129,13 +125,13 @@ def test_dynamodb_connection():
     """Test DynamoDB connection and return status."""
     health = get_dynamodb_health()
     if health["status"] == "healthy":
-        print(f"✅ DynamoDB connection successful")
-        print(f"   Region: {health['region']}")
-        print(f"   Table: {health['table_name']}")
-        print(f"   Status: {health['table_status']}")
+        print(f"DynamoDB connection successful")
+        print(f"Region: {health['region']}")
+        print(f"Table: {health['table_name']}")
+        print(f"Status: {health['table_status']}")
         return True
     else:
-        print(f"❌ DynamoDB connection failed")
-        print(f"   Error: {health['error']}")
-        print(f"   Message: {health['message']}")
+        print(f"DynamoDB connection failed")
+        print(f"Error: {health['error']}")
+        print(f"Message: {health['message']}")
         return False

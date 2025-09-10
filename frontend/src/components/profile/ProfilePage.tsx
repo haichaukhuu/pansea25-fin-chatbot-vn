@@ -8,22 +8,16 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { UserPreferencePage } from './UserPreferencePage';
 
 interface ProfilePageProps {
   onBack: () => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('profile');
-  const [notifications, setNotifications] = useState(true);
-
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      logout();
-    }
-  };
 
   return (
     <div className="min-h-screen" 
@@ -335,90 +329,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
             )}
 
             {activeTab === 'preferences' && (
-              <div className="bg-white rounded-lg shadow p-6 border border-neutral-200">
-                <h2 className="text-lg font-semibold text-dark-900 mb-6">{t('profile.preferences')}</h2>
-                
-                <div className="space-y-6">
-                  {/* Theme */}
-                  {/* <div>
-                    <label className="block text-sm font-medium text-dark-700 mb-3">
-                      Theme
-                    </label>
-                    <div className="flex items-center space-x-4">
-                      <button
-                        onClick={() => setIsDarkMode(false)}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-                          !isDarkMode
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-neutral-300 hover:bg-neutral-50'
-                        }`}
-                      >
-                        <SunIcon className="h-4 w-4" />
-                        <span>Light</span>
-                      </button>
-                      <button
-                        onClick={() => setIsDarkMode(true)}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
-                          isDarkMode
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-neutral-300 hover:bg-neutral-50'
-                        }`}
-                      >
-                        <MoonIcon className="h-4 w-4" />
-                        <span>Dark</span>
-                      </button>
-                    </div>
-                  </div> */}
-
-
-
-                  {/* Notifications */}
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-medium text-dark-700">
-                          {t('profile.email_notifications')}
-                        </label>
-                        <p className="text-sm text-neutral-600">{t('profile.notifications_desc')}</p>
-                      </div>
-                      <button
-                        onClick={() => setNotifications(!notifications)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          notifications ? 'bg-primary-600' : 'bg-neutral-200'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            notifications ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <button
-                      onClick={handleLogout}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      {t('profile.sign_out')}
-                    </button>
-                    <button className="px-4 py-2 rounded-lg transition-colors"
-                      style={{ backgroundColor: '#21A691', color: '#ffffff' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#87DF2C';
-                        e.currentTarget.style.color = '#000000';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#21A691';
-                        e.currentTarget.style.color = '#ffffff';
-                      }}
-                    >
-                      {t('profile.save_preferences')}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <UserPreferencePage onPreferencesUpdated={() => {
+                console.log('Preferences updated successfully');
+                // You can add any additional logic here if needed
+              }} />
             )}
           </div>
         </div>

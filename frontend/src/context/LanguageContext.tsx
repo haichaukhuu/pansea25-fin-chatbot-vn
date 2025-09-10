@@ -120,7 +120,45 @@ const translations = {
     'onboarding.preferences.financial_knowledge': 'Mức độ hiểu biết về tài chính của bạn là gì?',
     'onboarding.preferences.continue': 'Tiếp tục',
     'onboarding.preferences.back': 'Quay lại',
-    'onboarding.preferences.complete': 'Hoàn thành thiết lập'
+    'onboarding.preferences.complete': 'Hoàn thành thiết lập',
+    // User Preferences page specific translations
+    'preferences.loading': 'Đang tải tùy chọn...',
+    'preferences.error_loading': 'Không thể tải thông tin tùy chọn',
+    'preferences.error_saving': 'Đã xảy ra lỗi khi cập nhật tùy chọn. Vui lòng thử lại.',
+    'preferences.error_update_failed': 'Không thể cập nhật tùy chọn. Vui lòng thử lại.',
+    'preferences.success_updated': 'Tùy chọn của bạn đã được cập nhật thành công!',
+    'preferences.validation.agricultural_activity': 'Vui lòng chọn ít nhất một loại hoạt động nông nghiệp',
+    'preferences.validation.location': 'Vui lòng chọn khu vực bạn đang sinh sống',
+    'preferences.validation.farm_scale': 'Vui lòng chọn quy mô canh tác',
+    'preferences.validation.support_needs': 'Vui lòng chọn ít nhất một loại hỗ trợ',
+    'preferences.validation.financial_knowledge': 'Vui lòng chọn mức độ hiểu biết về tài chính',
+    'preferences.location_placeholder': 'Chọn tỉnh/thành phố',
+    'preferences.save_changes': 'Lưu thay đổi',
+    'preferences.saving': 'Đang lưu...',
+    // Agricultural activities
+    'agricultural.crop_cultivation': 'Trồng trọt',
+    'agricultural.livestock': 'Chăn nuôi',
+    'agricultural.aquaculture': 'Thủy sản',
+    'agricultural.forestry': 'Lâm nghiệp',
+    'agricultural.organic_farming': 'Nông nghiệp hữu cơ',
+    'agricultural.food_processing': 'Chế biến nông sản',
+    // Farm scales
+    'farm_scale.0_10_hectares': '0 đến 10 hecta',
+    'farm_scale.10_25_hectares': '10 đến 25 hecta',
+    'farm_scale.25_50_hectares': '25 đến 50 hecta',
+    'farm_scale.50_100_hectares': '50 đến 100 hecta',
+    'farm_scale.over_100_hectares': '>100 hecta',
+    // Support needs
+    'support.development_planning': 'Lời khuyên về kế hoạch phát triển cho canh tác',
+    'support.loan_advice': 'Lời khuyên về chọn khoản vay vốn',
+    'support.financial_education': 'Học kiến thức tài chính chung',
+    'support.financial_management': 'Lời khuyên về quản lí tài chính',
+    'support.market_trends': 'Cập nhật xu hướng thị trường và định hướng bán ra',
+    // Financial knowledge levels
+    'financial_knowledge.none': 'Tôi hoàn toàn không biết',
+    'financial_knowledge.basic': 'Tôi biết một số dịch vụ tài chính nhưng chưa sử dụng bao giờ',
+    'financial_knowledge.intermediate': 'Tôi biết và đã sử dụng dịch vụ tài chính',
+    'financial_knowledge.advanced': 'Tôi biết sâu và đã sử dụng các dịch vụ tài chính thường xuyên'
   },
   en: {
     'welcome.title': 'Welcome to Financial Chatbot',
@@ -225,7 +263,45 @@ const translations = {
     'onboarding.preferences.financial_knowledge': 'What is your level of financial knowledge?',
     'onboarding.preferences.continue': 'Continue',
     'onboarding.preferences.back': 'Back',
-    'onboarding.preferences.complete': 'Complete Setup'
+    'onboarding.preferences.complete': 'Complete Setup',
+    // User Preferences page specific translations
+    'preferences.loading': 'Loading preferences...',
+    'preferences.error_loading': 'Unable to load preference information',
+    'preferences.error_saving': 'An error occurred while updating preferences. Please try again.',
+    'preferences.error_update_failed': 'Unable to update preferences. Please try again.',
+    'preferences.success_updated': 'Your preferences have been updated successfully!',
+    'preferences.validation.agricultural_activity': 'Please select at least one type of agricultural activity',
+    'preferences.validation.location': 'Please select the region where you live',
+    'preferences.validation.farm_scale': 'Please select your farming scale',
+    'preferences.validation.support_needs': 'Please select at least one type of support',
+    'preferences.validation.financial_knowledge': 'Please select your level of financial knowledge',
+    'preferences.location_placeholder': 'Select province/city',
+    'preferences.save_changes': 'Save Changes',
+    'preferences.saving': 'Saving...',
+    // Agricultural activities
+    'agricultural.crop_cultivation': 'Crop Cultivation',
+    'agricultural.livestock': 'Livestock',
+    'agricultural.aquaculture': 'Aquaculture',
+    'agricultural.forestry': 'Forestry',
+    'agricultural.organic_farming': 'Organic Farming',
+    'agricultural.food_processing': 'Food Processing',
+    // Farm scales
+    'farm_scale.0_10_hectares': '0 to 10 hectares',
+    'farm_scale.10_25_hectares': '10 to 25 hectares',
+    'farm_scale.25_50_hectares': '25 to 50 hectares',
+    'farm_scale.50_100_hectares': '50 to 100 hectares',
+    'farm_scale.over_100_hectares': '>100 hectares',
+    // Support needs
+    'support.development_planning': 'Advice on farming development planning',
+    'support.loan_advice': 'Advice on choosing loans',
+    'support.financial_education': 'General financial education',
+    'support.financial_management': 'Financial management advice',
+    'support.market_trends': 'Market trend updates and sales guidance',
+    // Financial knowledge levels
+    'financial_knowledge.none': 'I know nothing at all',
+    'financial_knowledge.basic': 'I know some financial services but have never used them',
+    'financial_knowledge.intermediate': 'I know and have used financial services',
+    'financial_knowledge.advanced': 'I have deep knowledge and regularly use financial services'
   }
 };
 
