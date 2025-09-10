@@ -1,9 +1,3 @@
-"""
-API routes for user preferences management
-
-This module provides REST API endpoints for managing user preferences stored in DynamoDB.
-"""
-
 import logging
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -31,19 +25,6 @@ def create_user_preferences(
 ):
     """
     Create new user preferences after onboarding.
-    
-    This endpoint is called when a user completes the onboarding questionnaire.
-    It stores their preferences in DynamoDB for personalization.
-    
-    Args:
-        preference_data: The questionnaire answers from frontend
-        current_user: The authenticated user from JWT token
-        
-    Returns:
-        PreferenceResponse: Success/failure status with preference data
-        
-    Raises:
-        HTTPException: 400 for validation errors, 409 for conflicts, 500 for server errors
     """
     try:
         logger.info(f"Creating preferences for user {current_user.id}")
@@ -86,17 +67,6 @@ def get_user_preferences(
 ):
     """
     Get current user's preferences.
-    
-    This endpoint retrieves the user's stored preferences from DynamoDB.
-    
-    Args:
-        current_user: The authenticated user from JWT token
-        
-    Returns:
-        PreferenceResponse: User's preference data
-        
-    Raises:
-        HTTPException: 404 if not found, 500 for server errors
     """
     try:
         logger.info(f"Getting preferences for user {current_user.id}")
@@ -136,18 +106,6 @@ def update_user_preferences(
 ):
     """
     Update current user's preferences.
-    
-    This endpoint allows users to modify their preferences after initial setup.
-    
-    Args:
-        preference_data: The updated questionnaire answers
-        current_user: The authenticated user from JWT token
-        
-    Returns:
-        PreferenceResponse: Updated preference data
-        
-    Raises:
-        HTTPException: 404 if not found, 400 for validation errors, 500 for server errors
     """
     try:
         logger.info(f"Updating preferences for user {current_user.id}")
@@ -189,17 +147,6 @@ def delete_user_preferences(
 ):
     """
     Delete current user's preferences.
-    
-    This endpoint allows users to remove their stored preferences.
-    
-    Args:
-        current_user: The authenticated user from JWT token
-        
-    Returns:
-        PreferenceResponse: Deletion status
-        
-    Raises:
-        HTTPException: 404 if not found, 500 for server errors
     """
     try:
         logger.info(f"Deleting preferences for user {current_user.id}")
@@ -239,19 +186,6 @@ def upsert_user_preferences(
 ):
     """
     Create or update user preferences (upsert operation).
-    
-    This endpoint creates new preferences if they don't exist, or updates existing ones.
-    This is useful for the onboarding flow to handle both new and returning users.
-    
-    Args:
-        preference_data: The questionnaire answers from frontend
-        current_user: The authenticated user from JWT token
-        
-    Returns:
-        PreferenceResponse: Preference data after upsert
-        
-    Raises:
-        HTTPException: 400 for validation errors, 500 for server errors
     """
     try:
         logger.info(f"Upserting preferences for user {current_user.id}")
@@ -287,18 +221,6 @@ def check_preferences_exist(
 ):
     """
     Check if user preferences exist.
-    
-    This endpoint checks whether the user has completed the onboarding questionnaire.
-    Useful for frontend to determine whether to show onboarding or main app.
-    
-    Args:
-        current_user: The authenticated user from JWT token
-        
-    Returns:
-        dict: Boolean indicating if preferences exist
-        
-    Raises:
-        HTTPException: 500 for server errors
     """
     try:
         logger.info(f"Checking preferences existence for user {current_user.id}")
@@ -326,11 +248,6 @@ def check_preferences_exist(
 def preferences_health_check():
     """
     Health check endpoint for preferences service.
-    
-    This endpoint checks the health of DynamoDB connection and the Preference table.
-    
-    Returns:
-        dict: Health status information
     """
     try:
         from database.connections.dynamodb_connection import get_dynamodb_health

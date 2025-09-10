@@ -47,8 +47,21 @@ setuptools
 amazon-transcribe
 boto3
 websockets
-aws-sdk
+# aws-sdk
+
+# Web Scraping and Crawling
+httpx
+beautifulsoup4
+lxml
+playwright  # Optional: for JavaScript-heavy sites
 
 # Utilities
 tenacity
 python-slugify
+
+# Testing (development only)
+pytest
+pytest-asyncio
+
+# Additional utility libraries
+aiofiles
