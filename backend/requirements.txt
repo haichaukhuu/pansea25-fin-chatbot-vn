@@ -45,9 +45,8 @@ setuptools
 
 # Amazon Transcribe dependencies
 amazon-transcribe
-boto3
 websockets
-aws-sdk
+# aws-sdk
 
 # Utilities
 tenacity
