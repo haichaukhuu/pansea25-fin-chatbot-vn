@@ -121,6 +121,30 @@ const translations = {
     'onboarding.preferences.continue': 'Tiếp tục',
     'onboarding.preferences.back': 'Quay lại',
     'onboarding.preferences.complete': 'Hoàn thành thiết lập',
+    // Agricultural activities
+    'preferences.agricultural_activities.crop_cultivation': 'Trồng trọt',
+    'preferences.agricultural_activities.livestock': 'Chăn nuôi',
+    'preferences.agricultural_activities.aquaculture': 'Thủy sản',
+    'preferences.agricultural_activities.forestry': 'Lâm nghiệp',
+    'preferences.agricultural_activities.organic_farming': 'Nông nghiệp hữu cơ',
+    'preferences.agricultural_activities.food_processing': 'Chế biến nông sản',
+    // Farm scales
+    'preferences.farm_scales.small': '0 đến 10 hecta',
+    'preferences.farm_scales.medium_small': '10 đến 25 hecta',
+    'preferences.farm_scales.medium': '25 đến 50 hecta',
+    'preferences.farm_scales.large': '50 đến 100 hecta',
+    'preferences.farm_scales.very_large': '>100 hecta',
+    // Support needs
+    'preferences.support_needs.development_advice': 'Lời khuyên về kế hoạch phát triển cho canh tác',
+    'preferences.support_needs.loan_advice': 'Lời khuyên về chọn khoản vay vốn',
+    'preferences.support_needs.financial_education': 'Học kiến thức tài chính chung',
+    'preferences.support_needs.financial_management': 'Lời khuyên về quản lí tài chính',
+    'preferences.support_needs.market_trends': 'Cập nhật xu hướng thị trường và định hướng bán ra',
+    // Financial knowledge levels
+    'preferences.financial_knowledge.none': 'Tôi hoàn toàn không biết',
+    'preferences.financial_knowledge.basic': 'Tôi biết một số dịch vụ tài chính nhưng chưa sử dụng bao giờ',
+    'preferences.financial_knowledge.intermediate': 'Tôi biết và đã sử dụng dịch vụ tài chính',
+    'preferences.financial_knowledge.advanced': 'Tôi biết sâu và đã sử dụng các dịch vụ tài chính thường xuyên',
     // User Preferences page specific translations
     'preferences.loading': 'Đang tải tùy chọn...',
     'preferences.error_loading': 'Không thể tải thông tin tùy chọn',
@@ -264,6 +288,30 @@ const translations = {
     'onboarding.preferences.continue': 'Continue',
     'onboarding.preferences.back': 'Back',
     'onboarding.preferences.complete': 'Complete Setup',
+    // Agricultural activities
+    'preferences.agricultural_activities.crop_cultivation': 'Crop Cultivation',
+    'preferences.agricultural_activities.livestock': 'Livestock',
+    'preferences.agricultural_activities.aquaculture': 'Aquaculture',
+    'preferences.agricultural_activities.forestry': 'Forestry',
+    'preferences.agricultural_activities.organic_farming': 'Organic Farming',
+    'preferences.agricultural_activities.food_processing': 'Food Processing',
+    // Farm scales
+    'preferences.farm_scales.small': '0 to 10 hectares',
+    'preferences.farm_scales.medium_small': '10 to 25 hectares',
+    'preferences.farm_scales.medium': '25 to 50 hectares',
+    'preferences.farm_scales.large': '50 to 100 hectares',
+    'preferences.farm_scales.very_large': '>100 hectares',
+    // Support needs
+    'preferences.support_needs.development_advice': 'Advice on farming development plans',
+    'preferences.support_needs.loan_advice': 'Advice on choosing loans',
+    'preferences.support_needs.financial_education': 'Learn general financial knowledge',
+    'preferences.support_needs.financial_management': 'Advice on financial management',
+    'preferences.support_needs.market_trends': 'Market trend updates and sales guidance',
+    // Financial knowledge levels
+    'preferences.financial_knowledge.none': 'I know nothing at all',
+    'preferences.financial_knowledge.basic': 'I know some financial services but have never used them',
+    'preferences.financial_knowledge.intermediate': 'I know and have used financial services',
+    'preferences.financial_knowledge.advanced': 'I know deeply and have used financial services regularly',
     // User Preferences page specific translations
     'preferences.loading': 'Loading preferences...',
     'preferences.error_loading': 'Unable to load preference information',

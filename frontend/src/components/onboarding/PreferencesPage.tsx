@@ -49,36 +49,36 @@ export const PreferencesPage: React.FC<PreferencesPageProps> = ({ onComplete, on
     'Đà Nẵng', 'Hải Phòng', 'Hà Nội', 'TP. Hồ Chí Minh'
   ].sort();
 
-  const agriculturalActivities = [
-    'Trồng trọt',
-    'Chăn nuôi', 
-    'Thủy sản',
-    'Lâm nghiệp',
-    'Nông nghiệp hữu cơ',
-    'Chế biến nông sản'
+  const getAgriculturalActivities = () => [
+    t('preferences.agricultural_activities.crop_cultivation'),
+    t('preferences.agricultural_activities.livestock'),
+    t('preferences.agricultural_activities.aquaculture'),
+    t('preferences.agricultural_activities.forestry'),
+    t('preferences.agricultural_activities.organic_farming'),
+    t('preferences.agricultural_activities.food_processing')
   ];
 
-  const farmScales = [
-    '0 đến 10 hecta',
-    '10 đến 25 hecta', 
-    '25 đến 50 hecta',
-    '50 đến 100 hecta',
-    '>100 hecta'
+  const getFarmScales = () => [
+    t('preferences.farm_scales.small'),
+    t('preferences.farm_scales.medium_small'),
+    t('preferences.farm_scales.medium'),
+    t('preferences.farm_scales.large'),
+    t('preferences.farm_scales.very_large')
   ];
 
-  const supportNeedsOptions = [
-    'Lời khuyên về kế hoạch phát triển cho canh tác',
-    'Lời khuyên về chọn khoản vay vốn',
-    'Học kiến thức tài chính chung',
-    'Lời khuyên về quản lí tài chính',
-    'Cập nhật xu hướng thị trường và định hướng bán ra'
+  const getSupportNeedsOptions = () => [
+    t('preferences.support_needs.development_advice'),
+    t('preferences.support_needs.loan_advice'),
+    t('preferences.support_needs.financial_education'),
+    t('preferences.support_needs.financial_management'),
+    t('preferences.support_needs.market_trends')
   ];
 
-  const financialKnowledgeOptions = [
-    'Tôi hoàn toàn không biết',
-    'Tôi biết một số dịch vụ tài chính nhưng chưa sử dụng bao giờ',
-    'Tôi biết và đã sử dụng dịch vụ tài chính',
-    'Tôi biết sâu và đã sử dụng các dịch vụ tài chính thường xuyên'
+  const getFinancialKnowledgeOptions = () => [
+    t('preferences.financial_knowledge.none'),
+    t('preferences.financial_knowledge.basic'),
+    t('preferences.financial_knowledge.intermediate'),
+    t('preferences.financial_knowledge.advanced')
   ];
 
   const handleMultiSelect = (field: 'agriculturalActivity' | 'supportNeeds', value: string) => {
@@ -189,7 +189,7 @@ export const PreferencesPage: React.FC<PreferencesPageProps> = ({ onComplete, on
                   {t('onboarding.preferences.agricultural_activity')} *
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {agriculturalActivities.map((activity) => (
+                  {getAgriculturalActivities().map((activity) => (
                     <button
                       key={activity}
                       type="button"
@@ -252,7 +252,7 @@ export const PreferencesPage: React.FC<PreferencesPageProps> = ({ onComplete, on
                   value={preferences.location}
                   onChange={(e) => setPreferences(prev => ({ ...prev, location: e.target.value }))}
                 >
-                  <option value="">Chọn tỉnh/thành phố</option>
+                  <option value="">{t('preferences.location_placeholder')}</option>
                   {vietnamLocations.map((location) => (
                     <option key={location} value={location}>
                       {location}
@@ -266,7 +266,7 @@ export const PreferencesPage: React.FC<PreferencesPageProps> = ({ onComplete, on
                   {t('onboarding.preferences.farm_scale')} *
                 </label>
                 <div className="space-y-3">
-                  {farmScales.map((scale) => (
+                  {getFarmScales().map((scale) => (
                     <button
                       key={scale}
                       type="button"
@@ -296,7 +296,7 @@ export const PreferencesPage: React.FC<PreferencesPageProps> = ({ onComplete, on
                   {t('onboarding.preferences.support_needs')} *
                 </label>
                 <div className="space-y-3">
-                  {supportNeedsOptions.map((need) => (
+                  {getSupportNeedsOptions().map((need) => (
                     <button
                       key={need}
                       type="button"
@@ -321,7 +321,7 @@ export const PreferencesPage: React.FC<PreferencesPageProps> = ({ onComplete, on
                   {t('onboarding.preferences.financial_knowledge')} *
                 </label>
                 <div className="space-y-3">
-                  {financialKnowledgeOptions.map((knowledge) => (
+                  {getFinancialKnowledgeOptions().map((knowledge) => (
                     <button
                       key={knowledge}
                       type="button"
