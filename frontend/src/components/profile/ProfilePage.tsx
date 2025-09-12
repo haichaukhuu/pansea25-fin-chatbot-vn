@@ -4,7 +4,8 @@ import {
   UserCircleIcon,
   EnvelopeIcon,
   KeyIcon,
-  BellIcon
+  BellIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -15,7 +16,7 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -145,6 +146,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
               >
                 <BellIcon className="h-5 w-5" />
                 <span>{t('profile.preferences')}</span>
+              </button>
+              
+              {/* Logout Button */}
+              <button
+                onClick={() => {
+                  logout();
+                  onBack(); // Navigate back after logout
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-2 text-left rounded-lg transition-colors mt-4 border-t pt-4"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#FF6B6B',
+                  borderTopColor: 'rgba(255, 255, 255, 0.2)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FF6B6B';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#FF6B6B';
+                }}
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                <span>{t('profile.sign_out')}</span>
               </button>
             </nav>
           </div>
