@@ -73,13 +73,14 @@ class ChatHistoryRepository:
             logger.error(f"Error retrieving conversation history: {str(e)}")
             return []
     
-    def get_user_conversations(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_user_conversations(self, user_id: str, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
         """
         Get a list of user's conversations (most recent first).
         
         Args:
             user_id: The user ID
             limit: Maximum number of conversations to retrieve
+            offset: Number of conversations to skip (for pagination)
             
         Returns:
             List of conversation summaries
@@ -91,11 +92,10 @@ class ChatHistoryRepository:
                 ExpressionAttributeValues={
                     ":uid": {"S": user_id}
                 },
-                Limit=limit,
                 ScanIndexForward=False  # Get most recent first
             )
             
-            # Process results to group by conversation
+            # Process results to group by conversation and get the most recent message per conversation
             conversations = {}
             for item in response.get('Items', []):
                 item_dict = self._dynamodb_to_dict(item)
@@ -106,12 +106,34 @@ class ChatHistoryRepository:
                         'conversation_id': conv_id,
                         'last_message': item_dict['content'],
                         'last_updated': item_dict['created_at'],
-                        'message_count': 1
+                        'message_count': 1,
+                        'last_timestamp': item_dict['timestamp']  # Keep track of the most recent timestamp
                     }
                 else:
                     conversations[conv_id]['message_count'] += 1
+                    # Update last_message and last_updated if this message is more recent
+                    if item_dict['timestamp'] > conversations[conv_id]['last_timestamp']:
+                        conversations[conv_id]['last_message'] = item_dict['content']
+                        conversations[conv_id]['last_updated'] = item_dict['created_at']
+                        conversations[conv_id]['last_timestamp'] = item_dict['timestamp']
             
-            return list(conversations.values())
+            # Sort conversations by last_timestamp (most recent first) and apply pagination
+            sorted_conversations = sorted(
+                conversations.values(), 
+                key=lambda x: x['last_timestamp'], 
+                reverse=True
+            )
+            
+            # Apply offset and limit at the conversation level
+            start_idx = offset
+            end_idx = offset + limit
+            paginated_conversations = sorted_conversations[start_idx:end_idx]
+            
+            # Remove the helper timestamp field before returning
+            for conv in paginated_conversations:
+                del conv['last_timestamp']
+            
+            return paginated_conversations
         except ClientError as e:
             logger.error(f"Error retrieving user conversations: {str(e)}")
             return []

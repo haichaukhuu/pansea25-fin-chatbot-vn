@@ -78,18 +78,19 @@ class ChatHistoryService:
         """
         return self.repository.get_conversation(user_id, conversation_id)
     
-    def get_user_conversations(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_user_conversations(self, user_id: str, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
         """
         Get a summary of user's recent conversations.
         
         Args:
             user_id: The user ID
             limit: Maximum number of conversations to retrieve
+            offset: Number of conversations to skip (for pagination)
             
         Returns:
             List of conversation summaries
         """
-        return self.repository.get_user_conversations(user_id, limit)
+        return self.repository.get_user_conversations(user_id, limit, offset)
     
     def delete_conversation(self, user_id: str, conversation_id: str) -> bool:
         """

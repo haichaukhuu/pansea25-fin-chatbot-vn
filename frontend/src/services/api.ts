@@ -534,8 +534,8 @@ class ApiService {
   }
 
   // Chat History methods
-  async getConversations(limit: number = 10): Promise<ConversationListResponse> {
-    return this.request<ConversationListResponse>(`/chat/conversations?limit=${limit}`);
+  async getConversations(limit: number = 10, offset: number = 0): Promise<ConversationListResponse> {
+    return this.request<ConversationListResponse>(`/chat/conversations?limit=${limit}&offset=${offset}`);
   }
 
   async getConversationHistory(conversationId: string): Promise<ConversationHistoryResponse> {

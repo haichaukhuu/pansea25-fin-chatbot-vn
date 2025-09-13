@@ -248,7 +248,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     setIsLoadingConversations(true);
     try {
-      const response = await apiService.getConversations(10);
+      const response = await apiService.getConversations(10, 0); // Use offset 0 for initial load
       const backendChats = response.conversations.map(convertBackendConversation);
       
       // Load messages for all conversations to get proper titles
@@ -289,7 +289,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Set has more based on response length
       setHasMoreConversations(backendChats.length >= 10);
       
-      // If we have backend chats, select the first one; otherwise keep Demo Chat selected
+      // If backend chats available, select the first one; otherwise keep Demo Chat selected
       if (chatsWithMessages.length > 0) {
         const firstChat = chatsWithMessages[0];
         setCurrentChat(firstChat); // Chat already has messages loaded
@@ -316,16 +316,17 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     setIsLoadingConversations(true);
     try {
+      // Count current backend conversations (excluding demo chat)
       const currentBackendChats = chats.filter(chat => chat.conversationId && chat.id !== 'demo-chat-viet');
-      const response = await apiService.getConversations(currentBackendChats.length + 10);
+      const offset = currentBackendChats.length; // Use conversation count as offset
       
-      const allBackendChats = response.conversations.map(convertBackendConversation);
-      const newChats = allBackendChats.slice(currentBackendChats.length);
+      const response = await apiService.getConversations(10, offset);
+      const newBackendChats = response.conversations.map(convertBackendConversation);
       
-      if (newChats.length > 0) {
+      if (newBackendChats.length > 0) {
         // Load messages for new conversations to get proper titles
         const newChatsWithMessages = await Promise.all(
-          newChats.map(async (chat) => {
+          newBackendChats.map(async (chat) => {
             if (chat.conversationId) {
               try {
                 const messageResponse = await apiService.getConversationHistory(chat.conversationId);
@@ -354,14 +355,16 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           })
         );
         
+        // Add new conversations to the existing list (preserving Demo Chat at the beginning)
         setChats(prev => [
-          ...prev.filter(chat => chat.id === 'demo-chat-viet' || !chat.conversationId),
-          ...allBackendChats.slice(0, currentBackendChats.length), // Keep existing chats
-          ...newChatsWithMessages // Add new chats with messages
+          ...prev.filter(chat => chat.id === 'demo-chat-viet'), // Keep Demo Chat
+          ...prev.filter(chat => chat.conversationId && chat.id !== 'demo-chat-viet'), // Keep existing backend chats
+          ...newChatsWithMessages // Add new chats
         ]);
       }
       
-      setHasMoreConversations(newChats.length >= 10);
+      // Update hasMoreConversations based on whether we received a full page
+      setHasMoreConversations(newBackendChats.length >= 10);
     } catch (error) {
       console.error('Failed to load more conversations:', error);
       setHasMoreConversations(false);
@@ -468,12 +471,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const request = {
         message: content,
         conversation_id: currentChat.conversationId, // Include conversation_id for existing chats
-        chat_history: chatHistory.slice(0, -1), // Exclude the current message we just sent
-        user_profile: {} // You can add user profile data here if available
+        chat_history: chatHistory.slice(0, -1), // Exclude the current message
+        user_profile: {} // Add user profile data here if available
       };
 
       if (useStreaming) {
-        // For demo purposes, we'll create a mock streaming response if the backend is not available
         setIsStreaming(true);
         
         // Create initial streaming message

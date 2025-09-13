@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
@@ -261,7 +261,8 @@ async def chat_stream(
 
 @chat_router.get("/conversations", response_model=ConversationListResponse)
 async def get_conversations(
-    limit: int = 10,
+    limit: int = Query(default=10, description="Maximum number of conversations to retrieve"),
+    offset: int = Query(default=0, description="Number of conversations to skip for pagination"),
     current_user: User = Depends(get_current_user)
 ):
     """Get the user's recent conversations."""
@@ -269,7 +270,8 @@ async def get_conversations(
         chat_history_service = ChatHistoryService()
         conversations = chat_history_service.get_user_conversations(
             user_id=str(current_user.id),
-            limit=limit
+            limit=limit,
+            offset=offset
         )
         return ConversationListResponse(conversations=conversations)
     except Exception as e:
