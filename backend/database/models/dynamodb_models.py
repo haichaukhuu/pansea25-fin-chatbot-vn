@@ -68,8 +68,8 @@ class QuestionnaireAnswer(BaseModel):
         return v.strip() if v else ""
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "agricultural_activity": ["Trồng trọt", "Chăn nuôi"],
                 "crop_type": "Lúa, ngô",
@@ -126,7 +126,7 @@ class UserPreference(BaseModel):
         return v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
                 "user_email": "farmer@example.com",
@@ -155,8 +155,8 @@ class PreferenceCreateRequest(BaseModel):
     )
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "questionnaire_answer": {
                     "agricultural_activity": ["Trồng trọt", "Chăn nuôi"],
@@ -182,7 +182,7 @@ class PreferenceUpdateRequest(BaseModel):
     )
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class PreferenceResponse(BaseModel):
@@ -195,7 +195,7 @@ class PreferenceResponse(BaseModel):
     data: Optional[UserPreference] = Field(None, description="Preference data if applicable")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "success": True,
                 "message": "Preferences saved successfully",

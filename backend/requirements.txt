@@ -51,3 +51,8 @@ websockets
 # Utilities
 tenacity
 python-slugify
+
+# Web scraping and HTTP
+httpx
+beautifulsoup4
+lxml

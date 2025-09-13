@@ -31,6 +31,9 @@ from api.middleware.auth_middleware import JWTBearerMiddleware
 # Import transcription components
 from api.routes.transcription_route import router as transcription_router
 
+# Import weather service components
+from api.routes.weather import weather_router
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -55,6 +58,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api")  
 app.include_router(chat_router)
 app.include_router(preferences_router, prefix="/api")
+app.include_router(weather_router, prefix="/api")
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -155,32 +159,6 @@ async def health_check():
     )
 
 @app.get("/api/models")
-async def list_models():
-    """List available AI models"""
-    if not model_manager:
-        logger.error("Models endpoint called but model manager is not available")
-        raise HTTPException(status_code=503, detail="Model manager not available")
-    
-    try:
-        logger.info("Listing available models")
-        models = model_manager.get_available_models()
-        model_info = {}
-        
-        for model_name in models:
-            model = model_manager.get_model(model_name)
-            if model:
-                model_info[model_name] = {
-                    "name": model.config.name,
-                    "model_id": model.config.model_id,
-                    "is_available": model.is_available,
-                    "capabilities": [cap.value for cap in model.config.capabilities]
-                }
-        
-        return {"models": model_info}
-        
-    except Exception as e:
-        logger.error(f"Failed to list models: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to list models: {str(e)}")
 async def list_models():
     """List available AI models"""
     if not model_manager:
