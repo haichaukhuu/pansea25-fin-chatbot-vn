@@ -31,8 +31,12 @@ from api.middleware.auth_middleware import JWTBearerMiddleware
 # Import transcription components
 from api.routes.transcription_route import router as transcription_router
 
+
+# Import web scraping components
+from api.routes.web_scraping import router as web_scraping_router
 # Import weather service components
 from api.routes.weather import weather_router
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +62,9 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api")  
 app.include_router(chat_router)
 app.include_router(preferences_router, prefix="/api")
+
+app.include_router(web_scraping_router)
+
 app.include_router(weather_router, prefix="/api")
 
 # Initialize database on startup
