@@ -32,7 +32,7 @@ class Config:
     # AI Model settings
     GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY")
         
-    # DynamoDB settings
+    # Legacy DynamoDB settings (deprecated - use AWS_CONFIG instead)
     DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "Preference")
     DYNAMODB_REGION = os.getenv("DYNAMODB_REGION", "ap-southeast-1")
 
@@ -159,11 +159,17 @@ AWS_CONFIG = {
         "secret_access_key": os.getenv("AWS_DATABASE_SECRET_ACCESS_KEY"),
         "region": os.getenv("AWS_REGION", "ap-southeast-1")
     },
-    "dynamodb": {
-        "access_key_id": os.getenv("AWS_DYNAMODB_ACCESS_KEY_ID"),
-        "secret_access_key": os.getenv("AWS_DYNAMODB_SECRET_ACCESS_KEY"),
-        "region": os.getenv("DYNAMODB_REGION", "ap-southeast-1"),
-        "table_name": os.getenv("DYNAMODB_TABLE_NAME", "Preference")
+    "preference": {
+        "access_key_id": os.getenv("AWS_PREFERENCE_ACCESS_KEY_ID"),
+        "secret_access_key": os.getenv("AWS_PREFERENCE_SECRET_ACCESS_KEY"),
+        "region": os.getenv("PREFERENCE_REGION", "ap-southeast-1"),
+        "table_name": os.getenv("PREFERENCE_TABLE_NAME", "Preference")
+    },
+    "chat_history": {
+        "access_key_id": os.getenv("AWS_CHAT_HISTORY_ACCESS_KEY_ID"),
+        "secret_access_key": os.getenv("AWS_CHAT_HISTORY_SECRET_ACCESS_KEY"),
+        "region": os.getenv("AWS_REGION", "ap-southeast-1"),
+        "table_name": os.getenv("CHAT_HISTORY_TABLE_NAME", "ChatHistory")
     }
 }
 
@@ -287,5 +293,8 @@ def get_aws_database_config() -> Dict[str, str]:
     return AWS_CONFIG["database"]
 
 
-def get_aws_dynamodb_config() -> Dict[str, str]:
-    return AWS_CONFIG["dynamodb"]
+def get_aws_preference_config() -> Dict[str, str]:
+    return AWS_CONFIG["preference"]
+
+def get_aws_chat_history_config() -> Dict[str, str]:
+    return AWS_CONFIG["chat_history"]

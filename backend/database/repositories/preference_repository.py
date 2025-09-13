@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class PreferenceRepository:
     """
-    Repository class for DynamoDB preference operations.
+    Repository class for preference storage operations.
     Handles pure CRUD operations without business logic.
     """
     

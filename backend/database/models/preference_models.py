@@ -84,7 +84,7 @@ class QuestionnaireAnswer(BaseModel):
 
 class UserPreference(BaseModel):
     """
-    Model for user preferences stored in DynamoDB.
+    Model for user preferences stored in preference storage.
     """
     
     user_id: str = Field(
@@ -220,7 +220,7 @@ class PreferenceResponse(BaseModel):
 
 def convert_to_dynamodb_item(user_preference: UserPreference) -> Dict[str, Any]:
     """
-    Convert UserPreference model to DynamoDB item format.
+    Convert UserPreference model to preference storage item format.
     """
     return {
         "user_id": user_preference.user_id,
@@ -233,7 +233,7 @@ def convert_to_dynamodb_item(user_preference: UserPreference) -> Dict[str, Any]:
 
 def convert_from_dynamodb_item(item: Dict[str, Any]) -> UserPreference:
     """
-    Convert DynamoDB item to UserPreference model.
+    Convert preference storage item to UserPreference model.
     """
     return UserPreference(
         user_id=item["user_id"],

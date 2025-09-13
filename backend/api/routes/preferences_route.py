@@ -245,9 +245,9 @@ def preferences_health_check():
     Health check endpoint for preferences service.
     """
     try:
-        from database.connections.dynamodb_preference import get_dynamodb_health
+        from database.connections.dynamodb_preference import get_preference_health
         
-        health_status = get_dynamodb_health()
+        health_status = get_preference_health()
         
         if health_status['status'] == 'healthy':
             return JSONResponse(

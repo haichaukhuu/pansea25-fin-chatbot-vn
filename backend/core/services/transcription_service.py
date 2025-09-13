@@ -136,17 +136,17 @@ class TranscriptionService:
     async def initialize(self) -> bool:
         """Initialize the transcription service"""
         try:
-            if self.access_key_id and self.secret_access_key:
-                # Temporarily set environment variables for this session
-                os.environ['AWS_ACCESS_KEY_ID'] = self.access_key_id
-                os.environ['AWS_SECRET_ACCESS_KEY'] = self.secret_access_key
-                os.environ['AWS_DEFAULT_REGION'] = self.region
-                            
             if not self._validate_aws_credentials():
                 logger.error("AWS transcribe credentials not found or invalid")
                 return False
             
-            # Create client with region only - credentials are resolved automatically
+            # Set environment variables for boto3 if using explicit credentials
+            if self.access_key_id and self.secret_access_key:
+                os.environ['AWS_TRANSCRIBE_ACCESS_KEY_ID'] = self.access_key_id
+                os.environ['AWS_TRANSCRIBE_SECRET_ACCESS_KEY'] = self.secret_access_key
+                os.environ['AWS_REGION'] = self.region
+            
+            # Create client (uses environment variables for authentication)
             self.client = TranscribeStreamingClient(region=self.region)
            
             if self._shutdown_event is None:
