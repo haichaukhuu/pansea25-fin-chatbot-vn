@@ -5,7 +5,7 @@ import { apiService } from '../services/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string) => Promise<[boolean, string?]>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
   completeOnboarding: () => void;
@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+  const register = async (email: string, password: string, name: string): Promise<[boolean, string?]> => {
     try {
       const result = await apiService.register({ 
         email, 
@@ -122,13 +122,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           
           // Set as new user for onboarding flow
           setIsNewUser(true);
-          return true;
+          return [true, undefined];
         }
       }
-      return false;
-    } catch (error) {
+      return [false, result.message || 'Registration failed'];
+    } catch (error: any) {
       console.error('Registration error:', error);
-      return false;
+      return [false, error.message || 'An error occurred during registration'];
     }
   };
 

@@ -124,7 +124,19 @@ class ApiService {
       const response = await fetch(url, defaultOptions);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get a detailed error message from the response
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = `${errorMessage} - ${errorData.detail}`;
+          }
+        } catch (parseError) {
+          // If we can't parse the response as JSON, just use the default error message
+          console.error('Failed to parse error response', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
       
       return await response.json();
@@ -293,9 +305,16 @@ class ApiService {
       return { success: true, user: response };
     } catch (error: any) {
       console.error('Registration failed:', error);
+      
+      // Try to get more detailed error information
+      let errorMessage = error.message || 'Registration failed';
+      if (error instanceof Error && error.message.includes('422')) {
+        errorMessage = 'Validation error: Password must be at least 8 characters and contain at least one letter and one digit';
+      }
+      
       return { 
         success: false, 
-        message: error.message || 'Registration failed' 
+        message: errorMessage
       };
     }
   }

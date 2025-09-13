@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import logging
 import sys
 
-
 # Load environment variables
 load_dotenv()
 
@@ -117,7 +116,7 @@ LOGGING_CONFIG = {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
             "formatter": "detailed",
-            "stream": sys.stdout
+            "stream": "ext://sys.stdout"
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -125,7 +124,8 @@ LOGGING_CONFIG = {
             "formatter": "detailed",
             "filename": "app.log",
             "maxBytes": 10485760,  # 10MB
-            "backupCount": 5
+            "backupCount": 5,
+            "encoding": "utf-8"
         }
     },
     "loggers": {
@@ -206,9 +206,30 @@ def get_config() -> Dict[str, Any]:
     }
 
 def setup_logging():
-    """Set up logging configuration"""
+    """Set up logging configuration with UTF-8 support"""
     import logging.config
+    
+    # Set up UTF-8 encoding for console output
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except:
+            pass
+    
     logging.config.dictConfig(LOGGING_CONFIG)
+    
+    # Force UTF-8 encoding on the console handler
+    logger = logging.getLogger()
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
+            try:
+                handler.stream = sys.stdout
+                # Try to set encoding if supported
+                if hasattr(handler, 'setStream'):
+                    handler.setStream(sys.stdout)
+            except:
+                pass
+    
     logger = logging.getLogger(__name__)
     logger.info("Logging configured successfully")
 
