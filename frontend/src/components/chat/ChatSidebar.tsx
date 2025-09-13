@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bars3Icon, 
   PlusIcon, 
@@ -25,9 +25,37 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onNavigateToProfile 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { chats, currentChat, createNewChat, selectChat, searchChats, deleteChat } = useChat();
+  const { 
+    chats, 
+    currentChat, 
+    createNewChat, 
+    selectChat, 
+    searchChats, 
+    deleteChat,
+    isLoadingConversations,
+    hasMoreConversations,
+    loadMoreConversations
+  } = useChat();
   const { user } = useAuth();
   const { t, formatDate, formatTime } = useLanguage();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScrollEvent = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      // Load more when scrolled to bottom
+      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMoreConversations && !isLoadingConversations) {
+        loadMoreConversations();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScrollEvent);
+    return () => scrollContainer.removeEventListener('scroll', handleScrollEvent);
+  }, [hasMoreConversations, isLoadingConversations, loadMoreConversations]);
 
   const filteredChats = searchQuery.trim() ? searchChats(searchQuery) : chats;
 
@@ -154,7 +182,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
 
           {/* Chat List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
             {Object.keys(groupedChats).length === 0 ? (
               <div className="text-center py-8" style={{ color: '#B4B4B2' }}>
                 {searchQuery ? 'No chats found' : 'No chats yet'}
@@ -206,9 +234,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                   )}
                                 </div>
                                 <p className="text-xs opacity-75 truncate">
-                                  {chat.messages.length > 0 
+                                  {chat.lastMessage || (chat.messages.length > 0 
                                     ? chat.messages[chat.messages.length - 1].content.slice(0, 50) + '...'
-                                    : 'No messages'
+                                    : 'No messages')
                                   }
                                 </p>
                                 <p className="text-xs opacity-50">
@@ -232,6 +260,21 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       </div>
                     </div>
                   ))}
+                
+                {/* Loading indicator */}
+                {isLoadingConversations && (
+                  <div className="text-center py-4" style={{ color: '#B4B4B2' }}>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#21A691' }}></div>
+                    <p className="text-sm mt-2">{t('history.loading')}</p>
+                  </div>
+                )}
+                
+                {/* No more conversations indicator */}
+                {!hasMoreConversations && Object.keys(groupedChats).length > 0 && (
+                  <div className="text-center py-4" style={{ color: '#B4B4B2' }}>
+                    <p className="text-sm">{t('history.all_chats_loaded')}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

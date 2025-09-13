@@ -12,16 +12,20 @@ export interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   chatId: string;
+  conversationId?: string; // Added for backend compatibility
   isStreaming?: boolean; // True when message is being streamed
   isComplete?: boolean; // True when streaming is complete
 }
 
 export interface Chat {
   id: string;
+  conversationId?: string; // Added for backend compatibility
   title: string;
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  lastMessage?: string; // Added for display purposes
+  messageCount?: number; // Added for display purposes
 }
 
 export interface FileItem {

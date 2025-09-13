@@ -10,6 +10,7 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   message: string;
+  conversation_id?: string;
   chat_history?: ChatMessage[];
   user_profile?: Record<string, any>;
 }
@@ -19,6 +20,34 @@ export interface ChatResponse {
   model_used: string;
   confidence_score: number;
   usage_stats: Record<string, any>;
+  conversation_id: string;
+}
+
+// Chat History interfaces
+export interface ConversationListItem {
+  conversation_id: string;
+  last_message: string;
+  last_updated: string;
+  message_count: number;
+}
+
+export interface ConversationListResponse {
+  conversations: ConversationListItem[];
+}
+
+export interface MessageListItem {
+  user_id: string;
+  timestamp: number;
+  conversation_id: string;
+  message_type: string;
+  content: string;
+  sources: any[];
+  tools: any[];
+  created_at: string;
+}
+
+export interface ConversationHistoryResponse {
+  messages: MessageListItem[];
 }
 
 export interface HealthResponse {
@@ -163,7 +192,7 @@ class ApiService {
   async sendStreamingMessage(
     request: ChatRequest,
     onChunk: (chunk: string) => void,
-    onComplete: () => void,
+    onComplete: (conversationId?: string) => void,
     onError: (error: Error) => void
   ): Promise<void> {
     const url = `${this.baseUrl}/chat/stream`;
@@ -216,7 +245,7 @@ class ApiService {
               if (data.type === 'content') {
                 onChunk(data.content);
               } else if (data.type === 'done') {
-                onComplete();
+                onComplete(data.conversation_id);
                 return;
               } else if (data.type === 'error') {
                 throw new Error(data.message || 'Streaming error');
@@ -502,6 +531,21 @@ class ApiService {
         error: error.message || 'Health check failed' 
       };
     }
+  }
+
+  // Chat History methods
+  async getConversations(limit: number = 10): Promise<ConversationListResponse> {
+    return this.request<ConversationListResponse>(`/chat/conversations?limit=${limit}`);
+  }
+
+  async getConversationHistory(conversationId: string): Promise<ConversationHistoryResponse> {
+    return this.request<ConversationHistoryResponse>(`/chat/conversation/${conversationId}`);
+  }
+
+  async deleteConversation(conversationId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/chat/conversation/${conversationId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

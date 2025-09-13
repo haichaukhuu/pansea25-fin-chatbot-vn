@@ -80,6 +80,9 @@ const translations = {
     'input.recording': 'Đang ghi âm...',
     'chat.typing': 'AI đang trả lời...',
     'chat.ai_responding': 'AI đang trả lời...',
+    'history.loading': 'Đang tải lịch sử trò chuyện...',
+    'history.no_chats': 'Chưa có cuộc trò chuyện nào. Bắt đầu cuộc trò chuyện mới!',
+    'history.all_chats_loaded': 'Đã tải tất cả cuộc trò chuyện',
     // Transcription translations
     'transcription.result_title': 'Kết quả phiên âm',
     'transcription.confidence': 'Độ tin cậy:',
@@ -247,6 +250,9 @@ const translations = {
     'input.recording': 'Recording...',
     'chat.typing': 'AI is responding...',
     'chat.ai_responding': 'AI is responding...',
+    'history.loading': 'Loading conversation history...',
+    'history.no_chats': 'No chats yet. Start a new conversation!',
+    'history.all_chats_loaded': 'All conversations loaded',
     // Transcription translations
     'transcription.result_title': 'Transcription Result',
     'transcription.confidence': 'Confidence:',
