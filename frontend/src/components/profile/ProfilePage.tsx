@@ -183,7 +183,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                 
                 <div className="space-y-6">
                   {/* Avatar */}
-                  <div className="flex items-center space-x-6">
+                  {/* <div className="flex items-center space-x-6">
                     <div className="w-20 h-20 rounded-full flex items-center justify-center" 
                       style={{ backgroundColor: '#21A691' }}
                     >
@@ -205,7 +205,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                       </button>
                       <p className="text-sm mt-1" style={{ color: '#B4B4B2' }}>{t('profile.avatar_hint')}</p>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Name */}
                   <div>
