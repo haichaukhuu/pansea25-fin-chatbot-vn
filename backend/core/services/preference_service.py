@@ -1,36 +1,60 @@
 import logging
+import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any
-from botocore.exceptions import ClientError
 
-from database.connections.dynamodb_connection import get_dynamodb_table
-from database.models.dynamodb_models import (
-    UserPreference, 
-    QuestionnaireAnswer,
-    PreferenceCreateRequest,
-    PreferenceUpdateRequest,
-    convert_to_dynamodb_item,
-    convert_from_dynamodb_item
-)
+from database.repositories.preference_repository import PreferenceRepository
 from database.repositories.user_repository import UserRepository
 from database.connections.rds_postgres import postgres_connection
+from database.models.preference_models import (
+    UserPreference,
+    PreferenceCreateRequest,
+    PreferenceUpdateRequest
+)
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
 
-class DynamoDBService:
+class PreferenceService:
     """
-    Service class for managing user preferences in DynamoDB.
+    Service class for managing user preferences
     """
     
     def __init__(self):
-        """Initialize the DynamoDB service."""
-        pass
+        """Initialize the preference service."""
+        self.preference_repository = PreferenceRepository()
     
     def _get_user_repository(self):
         """Get a UserRepository instance with database session."""
         db_session = postgres_connection.get_db_session()
         return UserRepository(db_session)
+    
+    def _validate_user_exists(self, user_id: str) -> Dict[str, str]:
+        """
+        Validate that user exists in RDS and return user data.
+        
+        Args:
+            user_id: User ID to validate
+            
+        Returns:
+            Dict containing user_id_str and user_email
+            
+        Raises:
+            ValueError: If user not found
+        """
+        with postgres_connection.get_db_session() as db_session:
+            user_repository = UserRepository(db_session)
+            # Convert string user_id to UUID for database query
+            user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            user = user_repository.get_user_by_id(user_uuid)
+            if not user:
+                raise ValueError(f"User with ID {user_id} not found")
+            
+            return {
+                'user_id_str': str(user.id),
+                'user_email': user.email
+            }
     
     def create_user_preference(
         self, 
@@ -38,71 +62,66 @@ class DynamoDBService:
         preference_data: PreferenceCreateRequest
     ) -> Dict[str, Any]:
         """
-        Create new user preferences in DynamoDB.
+        Create new user preferences with business validation.
+        
+        Args:
+            user_id: User ID to create preferences for
+            preference_data: Preference data to create
+            
+        Returns:
+            Dict with success status, message, and data
         """
         try:
-            # Get user information from RDS
-            with postgres_connection.get_db_session() as db_session:
-                user_repository = UserRepository(db_session)
-                # Convert string user_id to UUID for database query
-                import uuid
-                user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-                user = user_repository.get_user_by_id(user_uuid)
-                if not user:
-                    raise ValueError(f"User with ID {user_id} not found")
-                
-                # Extract user data while session is active
-                user_id_str = str(user.id)
-                user_email = user.email
+            # Validate user exists
+            user_data = self._validate_user_exists(user_id)
             
             # Check if preferences already exist
-            existing_preference = self.get_user_preference(user_id)
-            if existing_preference.get('success') and existing_preference.get('data'):
+            if self.preference_repository.exists(user_id):
+                existing_preference = self.preference_repository.get_by_user_id(user_id)
                 return {
                     'success': False,
                     'message': 'User preferences already exist. Use update instead.',
-                    'data': existing_preference.get('data')
+                    'data': existing_preference
                 }
             
             # Create UserPreference object
             current_time = datetime.utcnow().isoformat()
             user_preference = UserPreference(
-                user_id=user_id_str,
-                user_email=user_email,
+                user_id=user_data['user_id_str'],
+                user_email=user_data['user_email'],
                 questionnaire_answer=preference_data.questionnaire_answer,
                 recorded_on=current_time,
                 updated_on=current_time
             )
             
-            # Convert to DynamoDB item format
-            item = convert_to_dynamodb_item(user_preference)
-            
-            # Save to DynamoDB
-            table = get_dynamodb_table()
-            table.put_item(
-                Item=item,
-                ConditionExpression='attribute_not_exists(user_id)'
-            )
+            # Save via repository
+            created_preference = self.preference_repository.create(user_preference)
             
             logger.info(f"Successfully created preferences for user {user_id}")
             
             return {
                 'success': True,
                 'message': 'User preferences created successfully',
-                'data': user_preference
+                'data': created_preference
             }
             
+        except ValueError as e:
+            logger.error(f"Validation error creating preferences for user {user_id}: {e}")
+            return {
+                'success': False,
+                'message': str(e),
+                'data': None
+            }
         except ClientError as e:
             error_code = e.response['Error']['Code']
-            if error_code == 'ConditionalCheckFailedException':
-                logger.warning(f"Preferences already exist for user {user_id}")
+            if error_code == 'PreferenceAlreadyExists':
                 return {
                     'success': False,
                     'message': 'User preferences already exist',
                     'data': None
                 }
             else:
-                logger.error(f"DynamoDB error creating preferences for user {user_id}: {e}")
+                logger.error(f"Database error creating preferences for user {user_id}: {e}")
                 raise
         except Exception as e:
             logger.error(f"Error creating preferences for user {user_id}: {e}")
@@ -110,27 +129,23 @@ class DynamoDBService:
     
     def get_user_preference(self, user_id: str) -> Dict[str, Any]:
         """
-        Get user preferences from DynamoDB.
+        Get user preferences by user ID.
+        
+        Args:
+            user_id: User ID to get preferences for
+            
+        Returns:
+            Dict with success status, message, and data
         """
         try:
-            table = get_dynamodb_table()
+            user_preference = self.preference_repository.get_by_user_id(user_id)
             
-            response = table.get_item(
-                Key={'user_id': user_id}
-            )
-            
-            if 'Item' not in response:
-                logger.info(f"No preferences found for user {user_id}")
+            if not user_preference:
                 return {
                     'success': False,
                     'message': 'User preferences not found',
                     'data': None
                 }
-            
-            # Convert DynamoDB item to UserPreference model
-            user_preference = convert_from_dynamodb_item(response['Item'])
-            
-            logger.info(f"Successfully retrieved preferences for user {user_id}")
             
             return {
                 'success': True,
@@ -138,13 +153,6 @@ class DynamoDBService:
                 'data': user_preference
             }
             
-        except ClientError as e:
-            logger.error(f"DynamoDB error getting preferences for user {user_id}: {e}")
-            return {
-                'success': False,
-                'message': f'Error retrieving preferences: {str(e)}',
-                'data': None
-            }
         except Exception as e:
             logger.error(f"Error getting preferences for user {user_id}: {e}")
             return {
@@ -159,43 +167,45 @@ class DynamoDBService:
         preference_data: PreferenceUpdateRequest
     ) -> Dict[str, Any]:
         """
-        Update existing user preferences in DynamoDB.
+        Update existing user preferences with business validation.
+        If preferences don't exist, create them automatically.
+        
+        Args:
+            user_id: User ID to update preferences for
+            preference_data: Preference data to update
+            
+        Returns:
+            Dict with success status, message, and data
         """
         try:
             # Check if preferences exist
-            existing_response = self.get_user_preference(user_id)
-            if not existing_response.get('success'):
-                return {
-                    'success': False,
-                    'message': 'User preferences not found. Create preferences first.',
-                    'data': None
-                }
+            if not self.preference_repository.exists(user_id):
+                logger.info(f"No preferences found for user {user_id}, creating new preferences")
+                
+                # Validate user exists before creating preferences
+                user_data = self._validate_user_exists(user_id)
+                
+                # Create new preferences if user exists but has no preferences yet
+                if preference_data.questionnaire_answer:
+                    # Convert update request to create request
+                    create_request = PreferenceCreateRequest(
+                        questionnaire_answer=preference_data.questionnaire_answer
+                    )
+                    return self.create_user_preference(user_id, create_request)
+                else:
+                    return {
+                        'success': False,
+                        'message': 'No preference data provided for creation',
+                        'data': None
+                    }
             
-            table = get_dynamodb_table()
-            current_time = datetime.utcnow().isoformat()
-            
-            # Prepare update expression
-            update_expression = "SET updated_on = :updated_on"
-            expression_attribute_values = {
-                ':updated_on': current_time
-            }
-            
-            # Update questionnaire answers if provided
+            # Prepare update data
+            update_data = {}
             if preference_data.questionnaire_answer:
-                update_expression += ", questionnaire_answer = :questionnaire_answer"
-                expression_attribute_values[':questionnaire_answer'] = \
-                    preference_data.questionnaire_answer.dict(by_alias=True)
+                update_data['questionnaire_answer'] = preference_data.questionnaire_answer.dict(by_alias=True)
             
-            # Update the item
-            response = table.update_item(
-                Key={'user_id': user_id},
-                UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_attribute_values,
-                ReturnValues='ALL_NEW'
-            )
-            
-            # Convert updated item to UserPreference model
-            updated_preference = convert_from_dynamodb_item(response['Attributes'])
+            # Update via repository
+            updated_preference = self.preference_repository.update(user_id, update_data)
             
             logger.info(f"Successfully updated preferences for user {user_id}")
             
@@ -206,12 +216,20 @@ class DynamoDBService:
             }
             
         except ClientError as e:
-            logger.error(f"DynamoDB error updating preferences for user {user_id}: {e}")
-            return {
-                'success': False,
-                'message': f'Error updating preferences: {str(e)}',
-                'data': None
-            }
+            error_code = e.response['Error']['Code']
+            if error_code == 'PreferenceNotFound':
+                return {
+                    'success': False,
+                    'message': 'User preferences not found. Create preferences first.',
+                    'data': None
+                }
+            else:
+                logger.error(f"Database error updating preferences for user {user_id}: {e}")
+                return {
+                    'success': False,
+                    'message': f'Error updating preferences: {str(e)}',
+                    'data': None
+                }
         except Exception as e:
             logger.error(f"Error updating preferences for user {user_id}: {e}")
             return {
@@ -222,18 +240,18 @@ class DynamoDBService:
     
     def delete_user_preference(self, user_id: str) -> Dict[str, Any]:
         """
-        Delete user preferences from DynamoDB.
+        Delete user preferences.
+        
+        Args:
+            user_id: User ID to delete preferences for
+            
+        Returns:
+            Dict with success status and message
         """
         try:
-            table = get_dynamodb_table()
+            deleted = self.preference_repository.delete(user_id)
             
-            # Delete the item
-            response = table.delete_item(
-                Key={'user_id': user_id},
-                ReturnValues='ALL_OLD'
-            )
-            
-            if 'Attributes' not in response:
+            if not deleted:
                 return {
                     'success': False,
                     'message': 'User preferences not found',
@@ -248,42 +266,35 @@ class DynamoDBService:
                 'data': None
             }
             
-        except ClientError as e:
-            logger.error(f"DynamoDB error deleting preferences for user {user_id}: {e}")
+        except Exception as e:
+            logger.error(f"Error deleting preferences for user {user_id}: {e}")
             return {
                 'success': False,
                 'message': f'Error deleting preferences: {str(e)}',
                 'data': None
             }
-        except Exception as e:
-            logger.error(f"Error deleting preferences for user {user_id}: {e}")
-            return {
-                'success': False,
-                'message': f'Unexpected error: {str(e)}',
-                'data': None
-            }
     
     def check_preference_exists(self, user_id: str) -> bool:
         """
-        Check user preferences exist in DynamoDB.
+        Check if user preferences exist.
+        
+        Args:
+            user_id: User ID to check
+            
+        Returns:
+            bool: True if preferences exist, False otherwise
         """
-        try:
-            table = get_dynamodb_table()
-            
-            response = table.get_item(
-                Key={'user_id': user_id},
-                ProjectionExpression='user_id'  # Only get the key to check existence
-            )
-            
-            return 'Item' in response
-            
-        except Exception as e:
-            logger.error(f"Error checking preference existence for user {user_id}: {e}")
-            return False
+        return self.preference_repository.exists(user_id)
     
     def get_user_preference_by_email(self, email: str) -> Dict[str, Any]:
         """
         Get user preferences by email address.
+        
+        Args:
+            email: Email address to search for
+            
+        Returns:
+            Dict with success status, message, and data
         """
         try:
             # First get user ID from RDS
@@ -297,7 +308,7 @@ class DynamoDBService:
                         'data': None
                     }
             
-            # Then get preferences from DynamoDB
+            # Then get preferences using user ID
             return self.get_user_preference(str(user.id))
             
         except Exception as e:
@@ -315,10 +326,17 @@ class DynamoDBService:
     ) -> Dict[str, Any]:
         """
         Create or update user preferences (upsert operation).
+        
+        Args:
+            user_id: User ID to upsert preferences for
+            preference_data: Preference data to upsert
+            
+        Returns:
+            Dict with success status, message, and data
         """
         try:
             # Check if preferences exist
-            exists = self.check_preference_exists(user_id)
+            exists = self.preference_repository.exists(user_id)
             
             if exists:
                 # Update existing preferences
@@ -340,4 +358,4 @@ class DynamoDBService:
 
 
 # Global service instance
-dynamodb_service = DynamoDBService()
+preference_service = PreferenceService()

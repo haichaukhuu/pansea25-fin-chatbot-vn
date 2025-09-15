@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
 
 from api.middleware.auth_middleware import get_current_user
-from core.services.dynamodb_service import dynamodb_service
-from database.models.dynamodb_models import (
+from core.services.preference_service import preference_service
+from database.models.preference_models import (
     PreferenceCreateRequest,
     PreferenceUpdateRequest,
     PreferenceResponse
@@ -30,7 +30,7 @@ def create_user_preferences(
         logger.info(f"Creating preferences for user {current_user.id}")
         
         # Create preferences using the service
-        result = dynamodb_service.create_user_preference(
+        result = preference_service.create_user_preference(
             user_id=str(current_user.id),
             preference_data=preference_data
         )
@@ -72,7 +72,7 @@ def get_user_preferences(
         logger.info(f"Getting preferences for user {current_user.id}")
         
         # Get preferences using the service
-        result = dynamodb_service.get_user_preference(str(current_user.id))
+        result = preference_service.get_user_preference(str(current_user.id))
         
         if result['success']:
             logger.info(f"Successfully retrieved preferences for user {current_user.id}")
@@ -106,12 +106,13 @@ def update_user_preferences(
 ):
     """
     Update current user's preferences.
+    If no preferences exist, they will be created automatically.
     """
     try:
         logger.info(f"Updating preferences for user {current_user.id}")
         
         # Update preferences using the service
-        result = dynamodb_service.update_user_preference(
+        result = preference_service.update_user_preference(
             user_id=str(current_user.id),
             preference_data=preference_data
         )
@@ -120,16 +121,10 @@ def update_user_preferences(
             logger.info(f"Successfully updated preferences for user {current_user.id}")
             return PreferenceResponse(**result)
         else:
-            if "not found" in result['message']:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User preferences not found"
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=result['message']
-                )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result['message']
+            )
     
     except HTTPException:
         raise
@@ -152,7 +147,7 @@ def delete_user_preferences(
         logger.info(f"Deleting preferences for user {current_user.id}")
         
         # Delete preferences using the service
-        result = dynamodb_service.delete_user_preference(str(current_user.id))
+        result = preference_service.delete_user_preference(str(current_user.id))
         
         if result['success']:
             logger.info(f"Successfully deleted preferences for user {current_user.id}")
@@ -191,7 +186,7 @@ def upsert_user_preferences(
         logger.info(f"Upserting preferences for user {current_user.id}")
         
         # Upsert preferences using the service
-        result = dynamodb_service.upsert_user_preference(
+        result = preference_service.upsert_user_preference(
             user_id=str(current_user.id),
             preference_data=preference_data
         )
@@ -226,7 +221,7 @@ def check_preferences_exist(
         logger.info(f"Checking preferences existence for user {current_user.id}")
         
         # Check if preferences exist
-        exists = dynamodb_service.check_preference_exists(str(current_user.id))
+        exists = preference_service.check_preference_exists(str(current_user.id))
         
         logger.info(f"Preferences exist for user {current_user.id}: {exists}")
         
@@ -250,9 +245,9 @@ def preferences_health_check():
     Health check endpoint for preferences service.
     """
     try:
-        from database.connections.dynamodb_connection import get_dynamodb_health
+        from database.connections.dynamodb_preference import get_preference_health
         
-        health_status = get_dynamodb_health()
+        health_status = get_preference_health()
         
         if health_status['status'] == 'healthy':
             return JSONResponse(

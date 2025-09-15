@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Chat, Message, FileItem } from '../types';
-import { apiService, type ChatMessage } from '../services/api';
+import { apiService, type ChatMessage, type ConversationListItem, type MessageListItem } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
 interface ChatContextType {
@@ -10,6 +10,9 @@ interface ChatContextType {
   files: FileItem[];
   isStreaming: boolean;
   streamingMessage: Message | null;
+  isLoadingConversations: boolean;
+  hasMoreConversations: boolean;
+  hasLoadedInitialHistory: boolean;
   createNewChat: () => string;
   selectChat: (chatId: string) => void;
   sendMessage: (content: string, useStreaming?: boolean) => Promise<void>;
@@ -17,7 +20,10 @@ interface ChatContextType {
   searchChats: (query: string) => Chat[];
   uploadFile: (file: File) => Promise<void>;
   deleteChat: (chatId: string) => void;
-  initializeForNewUser: () => void;
+  initializeForNewUser: () => Promise<void>;
+  loadChatHistory: () => Promise<void>;
+  loadMoreConversations: () => Promise<void>;
+  loadConversationMessages: (conversationId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -196,30 +202,234 @@ Nếu bạn cần thêm thông tin chi tiết về các chương trình vay ho�
 // ];
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [currentChat, setCurrentChat] = useState<Chat | null>(null);
+  // Initialize with Demo Chat immediately available
+  const [chats, setChats] = useState<Chat[]>([DEMO_CHAT]);
+  const [currentChat, setCurrentChat] = useState<Chat | null>(DEMO_CHAT);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingMessage, setStreamingMessage] = useState<Message | null>(null);
+  const [isLoadingConversations, setIsLoadingConversations] = useState<boolean>(false);
+  const [hasMoreConversations, setHasMoreConversations] = useState<boolean>(true);
+  const [hasLoadedInitialHistory, setHasLoadedInitialHistory] = useState<boolean>(false);
   const { t } = useLanguage();
 
-  const createNewChat = (): string => {
-    const newChat: Chat = {
+  // Helper function to convert backend message to frontend message
+  const convertBackendMessage = (backendMsg: MessageListItem, chatId: string): Message => {
+    return {
+      id: `${backendMsg.conversation_id}-${backendMsg.timestamp}`,
+      content: backendMsg.content,
+      sender: backendMsg.message_type === 'user' ? 'user' : 'bot',
+      timestamp: new Date(backendMsg.created_at),
+      chatId: chatId,
+      conversationId: backendMsg.conversation_id,
+      isComplete: true
+    };
+  };
+
+  // Helper function to convert backend conversation to frontend chat
+  const convertBackendConversation = (conversation: ConversationListItem): Chat => {
+    return {
+      id: conversation.conversation_id,
+      conversationId: conversation.conversation_id,
+      title: t('chat.new_chat_title'), // Use placeholder title, will be updated when messages are loaded
+      messages: [],
+      createdAt: new Date(conversation.last_updated),
+      updatedAt: new Date(conversation.last_updated),
+      lastMessage: conversation.last_message,
+      messageCount: conversation.message_count
+    };
+  };
+
+  // Load chat history from backend
+  const loadChatHistory = async (): Promise<void> => {
+    if (hasLoadedInitialHistory) {
+      return; // Prevent duplicate loading
+    }
+    
+    setIsLoadingConversations(true);
+    try {
+      const response = await apiService.getConversations(10, 0); // Use offset 0 for initial load
+      const backendChats = response.conversations.map(convertBackendConversation);
+      
+      // Load messages for all conversations to get proper titles
+      const chatsWithMessages = await Promise.all(
+        backendChats.map(async (chat) => {
+          if (chat.conversationId) {
+            try {
+              const messageResponse = await apiService.getConversationHistory(chat.conversationId);
+              const messages = messageResponse.messages.map(msg => convertBackendMessage(msg, chat.conversationId!));
+              
+              // Sort messages by timestamp to ensure proper order (oldest first)
+              messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+              
+              // Find the first user message to use as title
+              const firstUserMessage = messages.find(msg => msg.sender === 'user');
+              const titleFromFirstMessage = firstUserMessage 
+                ? (firstUserMessage.content.length > 30 ? firstUserMessage.content.slice(0, 30) + '...' : firstUserMessage.content)
+                : t('chat.new_chat_title');
+              
+              return {
+                ...chat,
+                messages,
+                title: titleFromFirstMessage
+              };
+            } catch (error) {
+              console.error(`Failed to load messages for conversation ${chat.conversationId}:`, error);
+              return chat; // Return original chat if loading messages fails
+            }
+          }
+          return chat;
+        })
+      );
+      
+      // Always include demo chat at the beginning
+      const allChats = [DEMO_CHAT, ...chatsWithMessages];
+      setChats(allChats);
+      
+      // Set has more based on response length
+      setHasMoreConversations(backendChats.length >= 10);
+      
+      // If backend chats available, select the first one; otherwise keep Demo Chat selected
+      if (chatsWithMessages.length > 0) {
+        const firstChat = chatsWithMessages[0];
+        setCurrentChat(firstChat); // Chat already has messages loaded
+      }
+      // If no backend chats, Demo Chat remains selected (already set in initial state)
+      
+      // Mark initial history as loaded
+      setHasLoadedInitialHistory(true);
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+      // On error, Demo Chat is already available, just ensure it's selected
+      setCurrentChat(DEMO_CHAT);
+      setHasMoreConversations(false);
+      // Still mark as loaded to prevent retries
+      setHasLoadedInitialHistory(true);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  // Load more conversations (for pagination)
+  const loadMoreConversations = async (): Promise<void> => {
+    if (isLoadingConversations || !hasMoreConversations) return;
+    
+    setIsLoadingConversations(true);
+    try {
+      // Count current backend conversations (excluding demo chat)
+      const currentBackendChats = chats.filter(chat => chat.conversationId && chat.id !== 'demo-chat-viet');
+      const offset = currentBackendChats.length; // Use conversation count as offset
+      
+      const response = await apiService.getConversations(10, offset);
+      const newBackendChats = response.conversations.map(convertBackendConversation);
+      
+      if (newBackendChats.length > 0) {
+        // Load messages for new conversations to get proper titles
+        const newChatsWithMessages = await Promise.all(
+          newBackendChats.map(async (chat) => {
+            if (chat.conversationId) {
+              try {
+                const messageResponse = await apiService.getConversationHistory(chat.conversationId);
+                const messages = messageResponse.messages.map(msg => convertBackendMessage(msg, chat.conversationId!));
+                
+                // Sort messages by timestamp to ensure proper order (oldest first)
+                messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                
+                // Find the first user message to use as title
+                const firstUserMessage = messages.find(msg => msg.sender === 'user');
+                const titleFromFirstMessage = firstUserMessage 
+                  ? (firstUserMessage.content.length > 30 ? firstUserMessage.content.slice(0, 30) + '...' : firstUserMessage.content)
+                  : t('chat.new_chat_title');
+                
+                return {
+                  ...chat,
+                  messages,
+                  title: titleFromFirstMessage
+                };
+              } catch (error) {
+                console.error(`Failed to load messages for conversation ${chat.conversationId}:`, error);
+                return chat; // Return original chat if loading messages fails
+              }
+            }
+            return chat;
+          })
+        );
+        
+        // Add new conversations to the existing list (preserving Demo Chat at the beginning)
+        setChats(prev => [
+          ...prev.filter(chat => chat.id === 'demo-chat-viet'), // Keep Demo Chat
+          ...prev.filter(chat => chat.conversationId && chat.id !== 'demo-chat-viet'), // Keep existing backend chats
+          ...newChatsWithMessages // Add new chats
+        ]);
+      }
+      
+      // Update hasMoreConversations based on whether we received a full page
+      setHasMoreConversations(newBackendChats.length >= 10);
+    } catch (error) {
+      console.error('Failed to load more conversations:', error);
+      setHasMoreConversations(false);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  // Load messages for a specific conversation
+  const loadConversationMessages = async (conversationId: string): Promise<void> => {
+    try {
+      const response = await apiService.getConversationHistory(conversationId);
+      const messages = response.messages.map(msg => convertBackendMessage(msg, conversationId));
+      
+      // Sort messages by timestamp to ensure proper order (oldest first)
+      messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      
+      // Find the first user message to use as title
+      const firstUserMessage = messages.find(msg => msg.sender === 'user');
+      const titleFromFirstMessage = firstUserMessage 
+        ? (firstUserMessage.content.length > 30 ? firstUserMessage.content.slice(0, 30) + '...' : firstUserMessage.content)
+        : t('chat.new_chat_title');
+      
+      // Update the chat with loaded messages and title from first user message
+      setChats(prev => prev.map(chat => 
+        chat.conversationId === conversationId 
+          ? { ...chat, messages, title: titleFromFirstMessage }
+          : chat
+      ));
+      
+      // Update current chat if it's the one being loaded
+      if (currentChat?.conversationId === conversationId) {
+        setCurrentChat(prev => prev ? { ...prev, messages, title: titleFromFirstMessage } : null);
+      }
+    } catch (error) {
+      console.error('Failed to load conversation messages:', error);
+    }
+  };
+
+  // Internal function to create new chat
+  const createNewChatInternal = (): Chat => {
+    return {
       id: Math.random().toString(36).substr(2, 9),
       title: t('chat.new_chat_title'),
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date()
     };
+  };
+
+  const createNewChat = (): string => {
+    const newChat = createNewChatInternal();
     setChats(prev => [newChat, ...prev]);
     setCurrentChat(newChat);
     return newChat.id;
   };
 
-  const selectChat = (chatId: string) => {
+  const selectChat = async (chatId: string) => {
     const chat = chats.find(c => c.id === chatId);
     if (chat) {
       setCurrentChat(chat);
+      // Only load messages if chat has conversationId but no messages loaded yet
+      if (chat.conversationId && chat.messages.length === 0) {
+        await loadConversationMessages(chat.conversationId);
+      }
     }
   };
 
@@ -239,7 +449,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ...currentChat,
       messages: [...currentChat.messages, userMessage],
       updatedAt: new Date(),
-      title: currentChat.messages.length === 0 ? content.slice(0, 30) + '...' : currentChat.title
+      // Only set title from first user message and lock it
+      title: currentChat.messages.length === 0 && currentChat.title === t('chat.new_chat_title')
+        ? (content.length > 30 ? content.slice(0, 30) + '...' : content)
+        : currentChat.title
     };
 
     setChats(prev => prev.map(chat => 
@@ -257,12 +470,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const request = {
         message: content,
-        chat_history: chatHistory.slice(0, -1), // Exclude the current message we just sent
-        user_profile: {} // You can add user profile data here if available
+        conversation_id: currentChat.conversationId, // Include conversation_id for existing chats
+        chat_history: chatHistory.slice(0, -1), // Exclude the current message
+        user_profile: {} // Add user profile data here if available
       };
 
       if (useStreaming) {
-        // For demo purposes, we'll create a mock streaming response if the backend is not available
         setIsStreaming(true);
         
         // Create initial streaming message
@@ -324,7 +537,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               });
             },
             // On complete
-            () => {
+            (conversationId?: string) => {
               setIsStreaming(false);
               setStreamingMessage(prevMsg => {
                 if (!prevMsg) return null;
@@ -334,11 +547,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   isComplete: true
                 };
 
-                // Update the final message in the chat
+                // Update the final message in the chat and set conversation_id if provided
                 setChats(prev => prev.map(chat => 
                   chat.id === currentChat.id 
                     ? {
                         ...chat,
+                        conversationId: conversationId || chat.conversationId,
                         messages: chat.messages.map(msg => 
                           msg.id === completedMsg.id ? completedMsg : msg
                         )
@@ -347,6 +561,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 ));
                 setCurrentChat(prev => prev ? {
                   ...prev,
+                  conversationId: conversationId || prev.conversationId,
                   messages: prev.messages.map(msg => 
                     msg.id === completedMsg.id ? completedMsg : msg
                   )
@@ -464,12 +679,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           sender: 'bot',
           timestamp: new Date(),
           chatId: currentChat.id,
+          conversationId: response.conversation_id,
           isComplete: true
         };
 
-        // Update chat with bot response
+        // Update chat with bot response and conversation_id
         const updatedChat = {
           ...chatWithUserMessage,
+          conversationId: response.conversation_id,
           messages: [...chatWithUserMessage.messages, botMessage],
           updatedAt: new Date()
         };
@@ -582,18 +799,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const initializeForNewUser = () => {
-    // Create demo chat and a new empty chat for the user when they sign in
-    const newChat: Chat = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: t('chat.new_chat_title'),
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    setChats([newChat, DEMO_CHAT]);
-    setCurrentChat(newChat); // Set new chat as current by default
-    setFiles([]);
+  const initializeForNewUser = async () => {
+    // Load chat history from backend
+    await loadChatHistory();
   };
 
   return (
@@ -603,6 +811,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       files,
       isStreaming,
       streamingMessage,
+      isLoadingConversations,
+      hasMoreConversations,
+      hasLoadedInitialHistory,
       createNewChat,
       selectChat,
       sendMessage,
@@ -610,7 +821,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       searchChats,
       uploadFile,
       deleteChat,
-      initializeForNewUser
+      initializeForNewUser,
+      loadChatHistory,
+      loadMoreConversations,
+      loadConversationMessages
     }}>
       {children}
     </ChatContext.Provider>

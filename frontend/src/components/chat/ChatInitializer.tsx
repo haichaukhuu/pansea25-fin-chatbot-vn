@@ -8,14 +8,16 @@ interface ChatInitializerProps {
 
 export const ChatInitializer: React.FC<ChatInitializerProps> = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
-  const { chats, initializeForNewUser } = useChat();
+  const { hasLoadedInitialHistory, loadChatHistory } = useChat();
 
   useEffect(() => {
-    // When user is authenticated and has no chats, create a new chat
-    if (isAuthenticated && user && chats.length === 0) {
-      initializeForNewUser();
+    // When user is authenticated and conversation history hasn't been loaded yet, load it
+    if (isAuthenticated && user && !hasLoadedInitialHistory) {
+      loadChatHistory().catch(error => {
+        console.error('Failed to load chat history:', error);
+      });
     }
-  }, [isAuthenticated, user, chats.length, initializeForNewUser]);
+  }, [isAuthenticated, user, hasLoadedInitialHistory, loadChatHistory]);
 
   return <>{children}</>;
 };
