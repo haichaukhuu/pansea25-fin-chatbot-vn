@@ -8,11 +8,15 @@ import logging
 import uuid
 from datetime import datetime
 
-# Import AI model components
-from ai_models.model_manager import ModelManager
+# Import ReAct agent components
+from agent.agent_service import AgentService
+from agent.react_agent import FinancialAgentResponse
 from core.services.chat_history_service import ChatHistoryService
 from api.middleware.auth_middleware import get_current_user
 from database.models.user import User
+
+# Legacy import for backward compatibility
+from ai_models.model_manager import ModelManager
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +67,30 @@ class MessageListItem(BaseModel):
 class ConversationHistoryResponse(BaseModel):
     messages: List[MessageListItem]
 
-# Initialize model manager (will be injected as dependency)
+# Initialize agent (will be injected as dependency)
+react_agent = None
+
+def get_react_agent():
+    """Dependency to get ReAct agent instance"""
+    global react_agent
+    if react_agent is None:
+        try:
+            react_agent = AgentService.create_agent()
+        except Exception as e:
+            logger.error(f"Failed to create ReAct agent: {str(e)}")
+            raise HTTPException(status_code=503, detail="AI agent not available")
+    return react_agent
+
+def set_react_agent(agent):
+    """Set the ReAct agent instance"""
+    global react_agent
+    react_agent = agent
+    
+# Legacy model manager for backward compatibility
 model_manager = None
 
 def get_model_manager() -> ModelManager:
-    """Dependency to get model manager instance"""
+    """Dependency to get model manager instance (legacy)"""
     global model_manager
     if model_manager is None:
         try:
@@ -77,24 +100,13 @@ def get_model_manager() -> ModelManager:
             raise HTTPException(status_code=503, detail="AI models not available")
     return model_manager
 
-def set_model_manager(manager: ModelManager):
-    """Set the model manager instance"""
-    global model_manager
-    model_manager = manager
-
 @chat_router.post("/", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
-    model_manager: ModelManager = Depends(get_model_manager)
+    agent = Depends(get_react_agent)
 ):
     """Main chat endpoint with chat history saving"""
-    # Check if any models are available
-    available_models = model_manager.get_available_models()
-    if not available_models:
-        logger.error("No AI models available for chat")
-        raise HTTPException(status_code=503, detail="No AI models available")
-    
     try:
         logger.info(f"Chat request received: {request.message[:50]}...")
         chat_history_service = ChatHistoryService()
@@ -109,34 +121,41 @@ async def chat(
             conversation_id=conversation_id
         )
         
-        # Prepare context
-        context = {
-            "chat_history": request.chat_history,
-            "user_profile": request.user_profile or {}
-        }
-        
-        # Generate response using the primary model
-        response = await model_manager.generate_response(
-            prompt=request.message,
-            context=context
+        # Process query using ReAct agent
+        agent_response = await AgentService.process_query(
+            agent=agent,
+            query=request.message,
+            user_id=str(current_user.id),
+            conversation_id=conversation_id
         )
         
-        logger.info(f"Chat response generated using model: {response.model_used}")
+        logger.info(f"Chat response generated using ReAct agent")
+        
+        # Extract sources and tools from agent response
+        sources = agent_response.sources if hasattr(agent_response, 'sources') else []
+        tools_used = agent_response.tool_usage if hasattr(agent_response, 'tool_usage') else []
         
         # Save assistant response to chat history
         chat_history_service.save_assistant_message(
             user_id=str(current_user.id),
-            message_content=response.content,
+            message_content=agent_response.response,
             conversation_id=conversation_id,
-            sources=response.usage_stats.get("sources", []),
-            tools=response.usage_stats.get("tools", [])
+            sources=sources,
+            tools=tools_used
         )
 
+        # Prepare usage stats
+        usage_stats = {
+            "sources": sources,
+            "tools": tools_used,
+            "reasoning": agent_response.reasoning if hasattr(agent_response, 'reasoning') else ""
+        }
+
         return ChatResponse(
-            response=response.content,
-            model_used=response.model_used,
-            confidence_score=response.confidence_score,
-            usage_stats=response.usage_stats,
+            response=agent_response.response,
+            model_used="ReAct Agent",
+            confidence_score=1.0,  # ReAct agent doesn't provide confidence score
+            usage_stats=usage_stats,
             conversation_id=conversation_id
         )
         
@@ -148,7 +167,7 @@ async def chat(
 async def chat_stream(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),
-    model_manager: ModelManager = Depends(get_model_manager)
+    agent = Depends(get_react_agent)
 ):
     """Streaming chat endpoint using Server-Sent Events with chat history saving"""
     try:
@@ -165,39 +184,47 @@ async def chat_stream(
             conversation_id=conversation_id
         )
         
-        # Prepare context
-        context = {
-            "chat_history": request.chat_history,
-            "user_profile": request.user_profile or {}
-        }
+        # Process query using ReAct agent (non-streaming for now)
+        agent_response = await AgentService.process_query(
+            agent=agent,
+            query=request.message,
+            user_id=str(current_user.id),
+            conversation_id=conversation_id
+        )
         
-        # Check if the generate_streaming_response method exists in the model_manager
-        if not hasattr(model_manager, 'generate_streaming_response'):
-            # Fallback to non-streaming if streaming not supported
-            logger.warning("Streaming not supported by model manager, falling back to standard response")
-            response = await model_manager.generate_response(
-                prompt=request.message,
-                context=context
-            )
+        logger.info(f"Chat response generated using ReAct agent")
+        
+        # Extract sources and tools from agent response
+        sources = agent_response.sources if hasattr(agent_response, 'sources') else []
+        tools_used = agent_response.tool_usage if hasattr(agent_response, 'tool_usage') else []
+        
+        # Save assistant response to chat history
+        chat_history_service.save_assistant_message(
+            user_id=str(current_user.id),
+            message_content=agent_response.response,
+            conversation_id=conversation_id,
+            sources=sources,
+            tools=tools_used
+        )
+        
+        # Return a single chunk as a stream
+        async def generate():
+            yield f"data: {json.dumps({'content': agent_response.response, 'type': 'content', 'conversation_id': conversation_id})}\n\n"
             
-            # Save the response to chat history
-            chat_history_service.save_assistant_message(
-                user_id=str(current_user.id),
-                message_content=response.content,
-                conversation_id=conversation_id,
-                sources=response.usage_stats.get("sources", []),
-                tools=response.usage_stats.get("tools", [])
-            )
+            # If there are sources, send them as a separate event
+            if sources:
+                yield f"data: {json.dumps({'sources': sources, 'type': 'sources', 'conversation_id': conversation_id})}\n\n"
             
-            # Return a single chunk as a stream
-            async def generate():
-                yield f"data: {json.dumps({'content': response.content, 'type': 'content', 'conversation_id': conversation_id})}\n\n"
-                yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id})}\n\n"
+            # If there are tools used, send them as a separate event
+            if tools_used:
+                yield f"data: {json.dumps({'tools': tools_used, 'type': 'tools', 'conversation_id': conversation_id})}\n\n"
                 
-            return StreamingResponse(
-                generate(),
-                media_type="text/event-stream",
-                headers={
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id})}\n\n"
+            
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
                     "Access-Control-Allow-Origin": "*",

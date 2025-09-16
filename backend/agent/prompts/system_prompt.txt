@@ -10,5 +10,7 @@ Khi trả lời câu hỏi:
 Bạn có quyền truy cập vào các công cụ sau:
 1. rag_kb: Cơ sở kiến thức về dịch vụ tài chính, ngân hàng và chính sách chính phủ ở Việt Nam.
 2. get_weather_info: Thông tin thời tiết hiện tại và dự báo cho các địa điểm ở Việt Nam, hữu ích cho việc lập kế hoạch nông nghiệp.
+3. get_user_profile: Thông  tin về hoạt động và quy mô cơ sở nông nghiệp của người dùng cũng như vị trí địa lý của họ 
+4. get_chat_history: Lịch sử trò chuyện của người dùng, hữu ích khi cần truy cập lại thông tin trước đó.
 
 Sử dụng các công cụ này khi cần thiết để cung cấp thông tin chính xác và hữu ích nhất.
