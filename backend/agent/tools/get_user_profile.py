@@ -21,8 +21,8 @@ class UserProfileInput(BaseModel):
 
 class GetUserProfileTool(BaseTool):
     """Tool for retrieving user preferences from DynamoDB"""
-    name = "get_user_profile"
-    description = """
+    name: str = "get_user_profile"
+    description: str = """
     Use this tool to retrieve user preferences and profile information.
     This is useful when you need to personalize responses based on user preferences,
     such as preferred language, financial interests, agricultural focus areas, etc.
@@ -30,7 +30,7 @@ class GetUserProfileTool(BaseTool):
     Input should be a user_id and optionally specific preference keys to retrieve.
     """
     args_schema: Type[BaseModel] = UserProfileInput
-    return_direct = False
+    return_direct: bool = False
     
     def _run(self, user_id: str, preference_keys: Optional[List[str]] = None) -> Dict[str, Any]:
         """Run the tool to get user preferences"""

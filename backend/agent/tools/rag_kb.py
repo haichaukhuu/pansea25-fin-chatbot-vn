@@ -1,6 +1,7 @@
 import os
 import boto3
 from typing import Dict, List, Any, Optional
+from pydantic import Field
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.tools import BaseTool
@@ -10,19 +11,42 @@ from langchain.schema import Document
 class RAGKnowledgeBaseTool(BaseTool):
     """Tool for retrieving information from a knowledge base using RAG."""
     
-    name = "rag_kb"
-    description = "Useful for retrieving information from the knowledge base about financial services, banking, and agriculture in Vietnam."
+    name: str = "rag_kb"
+    description: str = "Useful for retrieving information from the knowledge base about financial services, banking, and agriculture in Vietnam."
+    return_direct: bool = False
+    
+    # Define fields for Pydantic v2 compatibility
+    vector_store_bucket: str = Field(default="agrinfihub-vector-bucket", description="The S3 bucket name where vector indices are stored")
+    embedding_model_name: str = Field(default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", description="The HuggingFace model to use for embeddings")
+    
+    # Fields for non-serializable attributes
+    s3_client: Any = Field(default=None, exclude=True)
+    embedding_model: Any = Field(default=None, exclude=True)
+    vector_stores: Dict = Field(default_factory=dict, exclude=True)
+    available_indices: List[str] = Field(default_factory=lambda: ["bank", "financial_news", "government"], exclude=True)
+    
+    # Pydantic v2 configuration
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "extra": "allow"  # Allow extra attributes
+    }
     
     def __init__(self, vector_store_bucket: str = "agrinfihub-vector-bucket", 
-                 embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"):
+                 embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", **kwargs):
         """Initialize the RAG knowledge base tool.
         
         Args:
             vector_store_bucket: The S3 bucket name where vector indices are stored
             embedding_model: The HuggingFace model to use for embeddings
         """
-        super().__init__()
-        self.vector_store_bucket = vector_store_bucket
+        # Initialize parent class with proper field values
+        super().__init__(
+            vector_store_bucket=vector_store_bucket,
+            embedding_model_name=embedding_model,
+            **kwargs
+        )
+        
+        # Set up non-serializable attributes after parent initialization  
         self.s3_client = boto3.client('s3')
         self.embedding_model = HuggingFaceEmbeddings(model_name=embedding_model)
         self.vector_stores = {}

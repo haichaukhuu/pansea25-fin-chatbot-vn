@@ -69,8 +69,27 @@ class FinancialReactAgent:
         """
         try:
             prompt_dir = os.path.join(os.path.dirname(__file__), "prompts")
-            with open(os.path.join(prompt_dir, f"{prompt_type}_prompt.txt"), "r", encoding="utf-8") as f:
-                return f.read().strip()
+            if prompt_type == "system":
+                # Prefer the assistant system prompt and append tool guidance if available
+                sys_path = os.path.join(prompt_dir, "system_prompt_assistant.txt")
+                tool_path = os.path.join(prompt_dir, "system_prompt_tool.txt")
+                parts = []
+                if os.path.exists(sys_path):
+                    with open(sys_path, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                        if content:
+                            parts.append(content)
+                if os.path.exists(tool_path):
+                    with open(tool_path, "r", encoding="utf-8") as f:
+                        tool_content = f.read().strip()
+                        if tool_content:
+                            parts.append(tool_content)
+                if parts:
+                    return "\n\n".join(parts)
+                # Fallback to generic when files empty/missing
+            else:
+                with open(os.path.join(prompt_dir, f"{prompt_type}_prompt.txt"), "r", encoding="utf-8") as f:
+                    return f.read().strip()
         except FileNotFoundError:
             # Return default prompts if files don't exist
             if prompt_type == "system":
@@ -84,11 +103,27 @@ class FinancialReactAgent:
                 return "Question: {input}\nThought: I need to help answer this question about financial services or agriculture in Vietnam."
     
     def _create_agent(self):
-        """Create the ReAct agent."""
-        # Create the prompt template
+        """Create the ReAct agent with a Vietnamese ReAct-style prompt and required variables."""
+        react_instructions = (
+            self.system_prompt
+            + "\n\n"
+            + self.human_prompt
+            + "\n\nBạn có quyền truy cập các công cụ sau:\n{tools}\n\n"
+              "Quy tắc sử dụng ReAct (lặp lại Thought-Action-Observation nếu cần):\n"
+              "- Câu hỏi: {input}\n"
+              "- Suy nghĩ: nêu lập luận ngắn gọn\n"
+              "- Hành động: chọn một trong [{tool_names}]\n"
+              "- Đầu vào hành động: tham số cho công cụ\n"
+              "- Quan sát: kết quả từ công cụ\n"
+              "...\n"
+              "- Suy nghĩ: đã đủ thông tin\n"
+              "- Trả lời cuối cùng (tiếng Việt): rõ ràng, súc tích, có thể thực hành\n\n"
+              "Lịch sử hội thoại (tóm tắt): {chat_history}\n\n"
+              "Lưu ý: Nếu thiếu thông tin, hãy hỏi lại để làm rõ. Tránh bịa đặt."
+        )
         prompt = PromptTemplate.from_template(
-            template=self.system_prompt + "\n\n" + self.human_prompt,
-            input_variables=["input"]
+            template=react_instructions,
+            input_variables=["input", "chat_history", "tools", "tool_names", "agent_scratchpad"]
         )
         
         # Create the agent
@@ -145,6 +180,41 @@ class FinancialReactAgent:
             response = self.response_llm.invoke(response_prompt)
         else:
             # Use the reasoning model's output directly
+            response = result["output"]
+        
+        # Update memory
+        self.memory.chat_memory.add_user_message(query)
+        self.memory.chat_memory.add_ai_message(response)
+        
+        return FinancialAgentResponse(
+            response=response,
+            sources=sources,
+            tool_usage=tool_usage
+        )
+    
+    async def aprocess_query(self, query: str, context: Optional[Dict[str, Any]] = None) -> FinancialAgentResponse:
+        """Async variant to process a user query using the agent. Context may include user_id, conversation_id, etc."""
+        # Get chat history from memory
+        chat_history = self.memory.chat_memory.messages if self.memory.chat_memory.messages else []
+        
+        # Run the agent asynchronously
+        result = await self.agent.ainvoke({
+            "input": query,
+            "chat_history": chat_history
+        })
+        
+        # Extract sources and tool usage
+        sources = self._extract_sources(result)
+        tool_usage = self._extract_tool_usage(result)
+        
+        # Generate the final response using the Vietnamese-optimized model if specified
+        if self.response_llm != self.reasoning_llm:
+            response_prompt = f"""Dựa trên thông tin sau, hãy trả lời bằng tiếng Việt một cách rõ ràng, hữu ích và chính xác.
+\nCâu hỏi của người dùng: {query}
+\nThông tin phản hồi từ tác nhân: {result['output']}
+\nHãy trả lời ngắn gọn, súc tích, dễ hiểu cho nông hộ nhỏ lẻ ở Việt Nam. Nếu có thể, hãy đưa ra gợi ý hành động cụ thể và cảnh báo rủi ro liên quan."""
+            response = self.response_llm.invoke(response_prompt)
+        else:
             response = result["output"]
         
         # Update memory

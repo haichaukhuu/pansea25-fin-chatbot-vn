@@ -25,15 +25,15 @@ class ChatHistoryInput(BaseModel):
 
 class GetChatHistoryTool(BaseTool):
     """Tool for retrieving chat history from DynamoDB"""
-    name = "get_chat_history"
-    description = """
+    name: str = "get_chat_history"
+    description: str = """
     Use this tool to retrieve previous chat messages between the user and the assistant.
     This is useful for maintaining context in conversations and understanding the user's previous questions.
     
     Input should be a user_id and optionally a specific conversation_id.
     """
     args_schema: Type[BaseModel] = ChatHistoryInput
-    return_direct = False
+    return_direct: bool = False
     
     def _run(self, user_id: str, conversation_id: Optional[str] = None, limit: Optional[int] = 10) -> Dict[str, Any]:
         """Run the tool to get chat history"""

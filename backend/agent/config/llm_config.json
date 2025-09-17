@@ -18,7 +18,6 @@
   "tools": {
     "rag_kb": {
       "vector_store_bucket": "agrinfihub-vector-bucket",
-      "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
       "available_indices": ["bank", "financial_news", "government"]
     },
     "get_weather_info": {

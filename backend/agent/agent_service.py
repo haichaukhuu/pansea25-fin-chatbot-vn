@@ -14,6 +14,9 @@ from .tools.rag_kb import RAGKnowledgeBaseTool
 from .tools.get_weather_info import GetWeatherInfoTool
 from .tools.get_user_profile import GetUserProfileTool
 from .tools.get_chat_history import GetChatHistoryTool
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +24,7 @@ class AgentService:
     """Service for creating and managing ReAct agents"""
     
     @staticmethod
-    def create_agent(model_name: str = "claude-3-sonnet-20240229-v1:0") -> FinancialReactAgent:
+    def create_agent(model_name: str = "anthropic.claude-3-5-sonnet-20240620-v1:0") -> FinancialReactAgent:
         """
         Create a fully configured ReAct agent with all tools
         
@@ -38,12 +41,8 @@ class AgentService:
             # Create tools
             tools = AgentService._create_tools()
             
-            # Create agent
-            agent = FinancialReactAgent(
-                llm=llm,
-                tools=tools,
-                verbose=True
-            )
+            # Create agent using default constructor (agent internally loads Claude for reasoning)
+            agent = FinancialReactAgent(use_vietnamese_model=False)
             
             return agent
             
@@ -58,7 +57,9 @@ class AgentService:
         
         # Create RAG Knowledge Base tool
         try:
-            rag_tool = RAGKnowledgeBaseTool()
+            rag_tool = RAGKnowledgeBaseTool(
+                vector_store_bucket=Config.AWS_S3_VECTOR_BUCKET_NAME
+            )
             tools.append(rag_tool)
             logger.info("RAG Knowledge Base tool created successfully")
         except Exception as e:

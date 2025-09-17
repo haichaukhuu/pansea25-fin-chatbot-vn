@@ -45,7 +45,7 @@ class AWSBedrockLLM(LLM):
             "max_tokens": self.model_kwargs.get("max_tokens", 1000),
             "temperature": self.model_kwargs.get("temperature", 0.7),
             "messages": [
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": [{"type": "text", "text": prompt}]}
             ]
         }
         
@@ -63,7 +63,13 @@ class AWSBedrockLLM(LLM):
         
         # Parse the response
         response_body = json.loads(response.get('body').read())
-        return response_body.get('content')[0].get('text')
+        # Bedrock Claude messages API returns content as a list with type/text
+        content = response_body.get('content', [])
+        if content and isinstance(content, list):
+            item = content[0]
+            if isinstance(item, dict):
+                return item.get('text', '') or item.get('content', '')
+        return response_body.get('output_text', '') or ""
     
     def _call_llama(self, prompt: str, stop: Optional[List[str]] = None, 
                    run_manager: Optional[CallbackManagerForLLMRun] = None, **kwargs: Any) -> str:
@@ -105,12 +111,31 @@ class LLMClientFactory:
         )
     
     @staticmethod
-    def create_claude_llm(temperature: float = 0.7, max_tokens: int = 1000) -> AWSBedrockLLM:
-        """Create Claude Sonnet 4 LLM client."""
+    def create_llm(model_name: str, temperature: float = 0.7, max_tokens: int = 1000) -> AWSBedrockLLM:
+        """Create a generic Bedrock LLM client by model name/ID.
+        
+        If the model name contains 'anthropic' or 'claude', it will be routed to the Claude caller.
+        If it contains 'llama', it will be routed to the Llama caller.
+        """
         client = LLMClientFactory.create_bedrock_client()
         return AWSBedrockLLM(
             client=client,
-            model_id="anthropic.claude-sonnet-4-20250514-v1:0",
+            model_id=model_name,
+            model_kwargs={
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+        )
+    
+    @staticmethod
+    def create_claude_llm(temperature: float = 0.7, max_tokens: int = 1000, model_id: Optional[str] = None) -> AWSBedrockLLM:
+        """Create Claude Sonnet LLM client (defaults to Claude 3.5 Sonnet on Bedrock)."""
+        client = LLMClientFactory.create_bedrock_client()
+        # Default to the widely available Claude 3.5 Sonnet model ID on Bedrock if none provided
+        model_id = model_id or "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        return AWSBedrockLLM(
+            client=client,
+            model_id=model_id,
             model_kwargs={
                 "temperature": temperature,
                 "max_tokens": max_tokens,

@@ -1,18 +1,32 @@
 from typing import Dict, Any, Optional
+from pydantic import Field
 from langchain.tools import BaseTool
-from backend.external_services.weather_service.weather_service import WeatherService
-from backend.external_services.weather_service.models import WeatherData, WeatherError
+from external_services.weather_service.weather_service import WeatherService
+from external_services.weather_service.models import WeatherData, WeatherError
 
 
 class GetWeatherInfoTool(BaseTool):
     """Tool for retrieving weather information for agricultural planning."""
     
-    name = "get_weather_info"
-    description = "Useful for getting current weather and forecast information for a location in Vietnam to help with agricultural planning."
+    name: str = "get_weather_info"
+    description: str = "Useful for getting current weather and forecast information for a location in Vietnam to help with agricultural planning."
+    return_direct: bool = False
     
-    def __init__(self):
+    # Define fields for non-serializable attributes
+    weather_service: Any = Field(default=None, exclude=True)
+    
+    # Pydantic v2 configuration
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "extra": "allow"
+    }
+    
+    def __init__(self, **kwargs):
         """Initialize the weather information tool."""
-        super().__init__()
+        # Initialize parent class first
+        super().__init__(**kwargs)
+        
+        # Set instance attributes after parent initialization
         self.weather_service = WeatherService()
     
     def _run(self, location: str, include_forecast: bool = True) -> Dict[str, Any]:
