@@ -3,9 +3,14 @@ import logging
 from typing import Optional, Union, Dict, Any
 from datetime import datetime
 
-from .location_mapper import LocationMapper
-from .weather_scraper import WeatherScraper
-from .models import WeatherData, WeatherError, LocationMappingResult
+try:
+    from .location_mapper import LocationMapper
+    from .weather_scraper import WeatherScraper
+    from .models import WeatherData, WeatherError, LocationMappingResult
+except ImportError:
+    from location_mapper import LocationMapper
+    from weather_scraper import WeatherScraper
+    from models import WeatherData, WeatherError, LocationMappingResult
 
 logger = logging.getLogger(__name__)
 

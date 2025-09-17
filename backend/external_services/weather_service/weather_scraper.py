@@ -10,7 +10,10 @@ import httpx
 from bs4 import BeautifulSoup, Tag
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from .models import WeatherData, CurrentWeather, WeatherForecast, ForecastPeriod
+try:
+    from .models import WeatherData, CurrentWeather, WeatherForecast, ForecastPeriod
+except ImportError:
+    from models import WeatherData, CurrentWeather, WeatherForecast, ForecastPeriod
 
 logger = logging.getLogger(__name__)
 
@@ -78,24 +81,35 @@ class WeatherScraper:
             raise httpx.HTTPError(f"Unexpected error: {e}")
     
     def _parse_temperature(self, text: str) -> Optional[int]:
-        """Parse temperature from text.
+        """Parse temperature from text - enhanced for Vietnamese.
         """
         if not text:
             return None
         
-        # Look for temperature patterns like "31°C", "31°", "31 độ C"
+        # Enhanced temperature patterns for Vietnamese
         temp_patterns = [
             r'(\d+)°C',
             r'(\d+)°',
             r'(\d+)\s*độ\s*C',
             r'(\d+)\s*độ',
+            r'(\d+)\s*°C',
+            r'(\d+)\s*°',
+            r'nhiệt\s*độ\s*:\s*(\d+)',
+            r'temp\s*:\s*(\d+)',
+            r'(\d+)\s*degrees?',
         ]
         
+        # Clean the text first
+        text = text.strip()
+        
         for pattern in temp_patterns:
-            match = re.search(pattern, text)
+            match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 try:
-                    return int(match.group(1))
+                    temp = int(match.group(1))
+                    # Validate reasonable temperature range (-50 to 60°C)
+                    if -50 <= temp <= 60:
+                        return temp
                 except ValueError:
                     continue
         
@@ -126,15 +140,17 @@ class WeatherScraper:
         return None
     
     def _parse_wind_speed(self, text: str) -> Optional[int]:
-        """Parse wind speed from text."""
+        """Parse wind speed from text - enhanced for Vietnamese."""
         if not text:
             return None
         
-        # Look for wind speed patterns
+        # Look for wind speed patterns (including Vietnamese patterns)
         wind_patterns = [
-            r'(\d+)\s*m/s',
             r'(\d+)\s*km/h',
+            r'(\d+)\s*m/s',
             r'tốc\s*độ\s*:\s*(\d+)',
+            r'gió\s*:\s*(\d+)',
+            r'(\d+)\s*km/giờ',
         ]
         
         for pattern in wind_patterns:
@@ -152,11 +168,11 @@ class WeatherScraper:
         return None
     
     def _parse_wind_direction(self, text: str) -> Optional[str]:
-        """Parse wind direction from text."""
+        """Parse wind direction from text - enhanced for Vietnamese."""
         if not text:
             return None
         
-        # Vietnamese wind direction mappings
+        # Enhanced Vietnamese wind direction mappings
         direction_map = {
             'bắc': 'North',
             'nam': 'South', 
@@ -167,6 +183,16 @@ class WeatherScraper:
             'đông nam': 'Southeast',
             'tây nam': 'Southwest',
             'lặng gió': 'Calm',
+            'gió nhẹ': 'Light',
+            'gió mạnh': 'Strong',
+            'north': 'North',
+            'south': 'South',
+            'east': 'East',
+            'west': 'West',
+            'northeast': 'Northeast',
+            'northwest': 'Northwest',
+            'southeast': 'Southeast',
+            'southwest': 'Southwest',
         }
         
         text_lower = text.lower()
@@ -237,82 +263,195 @@ class WeatherScraper:
             return None
     
     def _extract_forecast(self, soup: BeautifulSoup, url: str) -> Optional[WeatherForecast]:
-        """Extract weather forecast from parsed HTML.
+        """Extract weather forecast from parsed HTML - enhanced for Vietnamese weather sites.
         """
         try:
             forecast = WeatherForecast()
             
-            # Look for forecast sections
-            forecast_sections = soup.find_all(['div', 'section', 'table'],
-                                            class_=re.compile(r'forecast|dự.báo|10.ngày', re.I))
+            # Enhanced Vietnamese weather site parsing
+            logger.info(f"Extracting 10-day forecast from Vietnamese weather site")
             
+            # Look for Vietnamese weather forecast sections with specific patterns
+            forecast_sections = []
+            
+            # Primary: Look for ten-days-weather class (specific to Vietnamese weather site)
+            ten_days_sections = soup.find_all('div', class_='ten-days-weather')
+            if ten_days_sections:
+                forecast_sections.extend(ten_days_sections)
+                logger.info(f"Found {len(ten_days_sections)} ten-days-weather sections")
+            
+            # Secondary: Look for generic forecast patterns
+            if not forecast_sections:
+                forecast_sections = soup.find_all(['div', 'section', 'table'],
+                                                class_=re.compile(r'forecast|dự.báo|10.ngày', re.I))
+                
             if not forecast_sections:
                 logger.warning(f"No forecast section found in {url}")
-                return None
+                return WeatherForecast()  # Return empty forecast instead of None
             
-            # Process forecast data
+            # Process Vietnamese forecast data
             for section in forecast_sections:
                 if isinstance(section, Tag):
-                    # Look for daily forecast entries
-                    day_entries = section.find_all(['tr', 'div'], 
-                                                 class_=re.compile(r'day|ngày|date', re.I))
+                    # Look for item-days-wt class elements (Vietnamese weather site structure)
+                    day_items = section.find_all('div', class_='item-days-wt')
                     
-                    if not day_entries:
-                        # Fallback: look for any structured forecast data
-                        day_entries = section.find_all(['tr', 'div'])
+                    if day_items:
+                        logger.info(f"Found {len(day_items)} forecast items using Vietnamese structure")
+                        
+                        for i, item in enumerate(day_items):
+                            try:
+                                # Extract Vietnamese date text
+                                date_elem = item.find('p', class_='text-days')
+                                date_text = date_elem.get_text(strip=True) if date_elem else f"Day {i+1}"
+                                
+                                # Extract high temperature
+                                high_temp = None
+                                large_temp_elem = item.find('span', class_='large-temp')
+                                if large_temp_elem:
+                                    high_temp = self._parse_temperature(large_temp_elem.get_text())
+                                
+                                # Extract low temperature  
+                                low_temp = None
+                                small_temp_elem = item.find('span', class_='small-temp')
+                                if small_temp_elem:
+                                    low_temp = self._parse_temperature(small_temp_elem.get_text())
+                                
+                                # Calculate average temperature
+                                avg_temp = None
+                                if high_temp is not None and low_temp is not None:
+                                    avg_temp = (high_temp + low_temp) // 2
+                                elif high_temp is not None:
+                                    avg_temp = high_temp
+                                elif low_temp is not None:
+                                    avg_temp = low_temp
+                                
+                                # Extract weather condition
+                                condition = None
+                                text_temp_elem = item.find('p', class_='text-temp')
+                                if text_temp_elem:
+                                    condition = text_temp_elem.get_text(strip=True)
+                                
+                                # Extract wind information
+                                wind_speed = None
+                                wind_direction = None
+                                wind_elem = item.find('p', class_='wind-info')
+                                if wind_elem:
+                                    wind_text = wind_elem.get_text(strip=True)
+                                    wind_speed = self._parse_wind_speed(wind_text)
+                                    wind_direction = self._parse_wind_direction(wind_text)
+                                
+                                # Create forecast period with Vietnamese date format
+                                period = ForecastPeriod(
+                                    time=date_text,
+                                    temperature_c=avg_temp,
+                                    condition=condition,
+                                    wind_speed_kmh=wind_speed,
+                                    wind_direction=wind_direction
+                                )
+                                
+                                # Assign to appropriate day (first 3 days)
+                                if i == 0:
+                                    forecast.today.append(period)
+                                elif i == 1:
+                                    forecast.tomorrow.append(period)
+                                elif i == 2:
+                                    forecast.day_after.append(period)
+                                
+                                logger.debug(f"Parsed forecast item {i}: {date_text}, {avg_temp}°C, {condition}")
+                                
+                            except Exception as item_error:
+                                logger.warning(f"Error parsing forecast item {i}: {item_error}")
+                                continue
+                                
+                        # If we found Vietnamese structure data, return it
+                        if forecast.today or forecast.tomorrow or forecast.day_after:
+                            logger.info(f"Successfully extracted Vietnamese forecast data")
+                            return forecast
                     
-                    for i, entry in enumerate(day_entries[:3]):  # Process first 3 days
-                        if isinstance(entry, Tag):
-                            entry_text = entry.get_text()
-                            
-                            # Create forecast period
-                            period = ForecastPeriod(
-                                time=f"Day {i+1}",
-                                temperature_c=self._parse_temperature(entry_text),
-                                condition=self._extract_condition_from_text(entry_text),
-                                humidity_percent=self._parse_humidity(entry_text),
-                                wind_speed_kmh=self._parse_wind_speed(entry_text)
-                            )
-                            
-                            # Assign to appropriate day
-                            if i == 0:
-                                forecast.today.append(period)
-                            elif i == 1:
-                                forecast.tomorrow.append(period)
-                            elif i == 2:
-                                forecast.day_after.append(period)
+                    # Fallback: Generic parsing for non-Vietnamese sites
+                    else:
+                        logger.info("Using fallback generic forecast parsing")
+                        day_entries = section.find_all(['tr', 'div'], 
+                                                     class_=re.compile(r'day|ngày|date', re.I))
+                        
+                        if not day_entries:
+                            day_entries = section.find_all(['tr', 'div'])
+                        
+                        for i, entry in enumerate(day_entries[:3]):  # Process first 3 days
+                            if isinstance(entry, Tag):
+                                entry_text = entry.get_text()
+                                
+                                # Create forecast period
+                                period = ForecastPeriod(
+                                    time=f"Day {i+1}",
+                                    temperature_c=self._parse_temperature(entry_text),
+                                    condition=self._extract_condition_from_text(entry_text),
+                                    humidity_percent=self._parse_humidity(entry_text),
+                                    wind_speed_kmh=self._parse_wind_speed(entry_text)
+                                )
+                                
+                                # Assign to appropriate day
+                                if i == 0:
+                                    forecast.today.append(period)
+                                elif i == 1:
+                                    forecast.tomorrow.append(period)
+                                elif i == 2:
+                                    forecast.day_after.append(period)
             
-            # Return forecast if we found any data
+            # Return forecast (may be empty but not None for robust error handling)
             if forecast.today or forecast.tomorrow or forecast.day_after:
-                return forecast
+                logger.info(f"Successfully extracted forecast data: today={len(forecast.today)}, tomorrow={len(forecast.tomorrow)}, day_after={len(forecast.day_after)}")
+            else:
+                logger.warning(f"Could not extract meaningful forecast data from {url}")
             
-            logger.warning(f"Could not extract meaningful forecast data from {url}")
-            return None
+            return forecast
             
         except Exception as e:
             logger.error(f"Error extracting forecast from {url}: {e}")
-            return None
+            return WeatherForecast()  # Return empty forecast instead of None
     
     def _extract_condition_from_text(self, text: str) -> Optional[str]:
-        """Extract weather condition from text."""
+        """Extract weather condition from text - enhanced for Vietnamese."""
         if not text:
             return None
         
-        # Common Vietnamese weather conditions
+        # Enhanced Vietnamese weather conditions
         conditions = [
             'nắng', 'mưa', 'mây', 'sương mù', 'gió', 'bão', 'dông',
-            'có mây', 'ít mây', 'nhiều mây', 'trời nắng', 'mưa rào',
-            'mưa dông', 'sương', 'khô hanh'
+            'có mây', 'ít mây', 'nhiều mây', 'trời nắng', 'mưa rão',
+            'mưa dông', 'sương', 'khô hanh', 'nắng nóng', 'nắng gắt',
+            'có mây, không mưa', 'có mây, có mưa', 'mưa vừa', 'mưa to',
+            'mưa nhỏ', 'nắng ít mây', 'nhiều mây, có mưa', 'âm u',
+            'quang mây', 'nắng hanh', 'lạnh', 'mát mẻ'
         ]
         
-        text_lower = text.lower()
+        text_lower = text.lower().strip()
+        
+        # First, try to find exact matches for longer conditions
+        longer_conditions = [c for c in conditions if len(c) > 5]
+        longer_conditions.sort(key=len, reverse=True)  # Sort by length, longest first
+        
+        for condition in longer_conditions:
+            if condition in text_lower:
+                # Return the original condition text cleaned up
+                return text.strip()
+        
+        # Then try shorter conditions
         for condition in conditions:
             if condition in text_lower:
                 # Extract the sentence containing the condition
                 sentences = text.split('.')
                 for sentence in sentences:
                     if condition in sentence.lower():
-                        return sentence.strip()
+                        cleaned = sentence.strip()
+                        if cleaned:
+                            return cleaned
+                # If no sentence found, return the original text
+                return text.strip()
+        
+        # If no Vietnamese conditions found, return original text if it looks like a condition
+        if len(text.strip()) < 50 and any(word in text_lower for word in ['sunny', 'cloudy', 'rain', 'clear', 'fog']):
+            return text.strip()
         
         return None
     

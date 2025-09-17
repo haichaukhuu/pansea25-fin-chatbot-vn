@@ -5,7 +5,10 @@ from difflib import SequenceMatcher
 import re
 import logging
 
-from .models import LocationMappingResult, LocationSuggestion
+try:
+    from .models import LocationMappingResult, LocationSuggestion
+except ImportError:
+    from models import LocationMappingResult, LocationSuggestion
 
 logger = logging.getLogger(__name__)
 
