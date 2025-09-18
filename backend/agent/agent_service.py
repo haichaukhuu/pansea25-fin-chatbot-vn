@@ -6,14 +6,9 @@ Provides factory methods to create and configure the agent with all necessary to
 import os
 import json
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union, AsyncGenerator
 
 from .react_agent import FinancialReactAgent, FinancialAgentResponse
-from .llm_clients import LLMClientFactory
-from .tools.rag_kb import RAGKnowledgeBaseTool
-from .tools.get_weather_info import GetWeatherInfoTool
-from .tools.get_user_profile import GetUserProfileTool
-from .tools.get_chat_history import GetChatHistoryTool
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config
@@ -24,26 +19,23 @@ class AgentService:
     """Service for creating and managing ReAct agents"""
     
     @staticmethod
-    def create_agent(model_name: str = "anthropic.claude-3-5-sonnet-20240620-v1:0") -> FinancialReactAgent:
+    def create_agent(use_vietnamese_model: bool = True) -> FinancialReactAgent:
         """
         Create a fully configured ReAct agent with all tools
         
         Args:
-            model_name: The name of the model to use (default: Claude Sonnet)
+            use_vietnamese_model: Whether to use SEA-LION for Vietnamese response generation
             
         Returns:
             FinancialReactAgent: Configured agent instance
         """
         try:
-            # Create LLM client
-            llm = LLMClientFactory.create_llm(model_name)
+            logger.info("Creating financial ReAct agent...")
             
-            # Create tools
-            tools = AgentService._create_tools()
+            # Create the agent
+            agent = FinancialReactAgent(use_vietnamese_model=use_vietnamese_model, use_modern_implementation=True)
             
-            # Create agent using default constructor (agent internally loads Claude for reasoning)
-            agent = FinancialReactAgent(use_vietnamese_model=False)
-            
+            logger.info("Successfully created financial ReAct agent")
             return agent
             
         except Exception as e:
@@ -51,53 +43,13 @@ class AgentService:
             raise
     
     @staticmethod
-    def _create_tools() -> List[Any]:
-        """Create all tools needed for the agent"""
-        tools = []
-        
-        # Create RAG Knowledge Base tool
-        try:
-            rag_tool = RAGKnowledgeBaseTool(
-                vector_store_bucket=Config.AWS_S3_VECTOR_BUCKET_NAME
-            )
-            tools.append(rag_tool)
-            logger.info("RAG Knowledge Base tool created successfully")
-        except Exception as e:
-            logger.error(f"Error creating RAG tool: {str(e)}")
-        
-        # Create Weather Info tool
-        try:
-            weather_tool = GetWeatherInfoTool()
-            tools.append(weather_tool)
-            logger.info("Weather Info tool created successfully")
-        except Exception as e:
-            logger.error(f"Error creating Weather tool: {str(e)}")
-        
-        # Create User Profile tool
-        try:
-            profile_tool = GetUserProfileTool()
-            tools.append(profile_tool)
-            logger.info("User Profile tool created successfully")
-        except Exception as e:
-            logger.error(f"Error creating User Profile tool: {str(e)}")
-        
-        # Create Chat History tool
-        try:
-            history_tool = GetChatHistoryTool()
-            tools.append(history_tool)
-            logger.info("Chat History tool created successfully")
-        except Exception as e:
-            logger.error(f"Error creating Chat History tool: {str(e)}")
-        
-        return tools
-    
-    @staticmethod
     async def process_query(
         agent: FinancialReactAgent,
         query: str,
         user_id: str,
-        conversation_id: Optional[str] = None
-    ) -> FinancialAgentResponse:
+        conversation_id: Optional[str] = None,
+        stream: bool = True
+    ) -> Union[FinancialAgentResponse, AsyncGenerator[str, None]]:
         """
         Process a user query with the agent
         
@@ -106,9 +58,10 @@ class AgentService:
             query: User's query text
             user_id: User ID for context retrieval
             conversation_id: Optional conversation ID for history
+            stream: Whether to stream the response
             
         Returns:
-            FinancialAgentResponse: The agent's response
+            FinancialAgentResponse or AsyncGenerator for streaming
         """
         try:
             # Set up context with user ID and conversation ID
@@ -118,9 +71,92 @@ class AgentService:
             }
             
             # Process the query
-            response = await agent.aprocess_query(query, context)
+            response = await agent.aprocess_query(query, context, stream=stream)
             return response
             
         except Exception as e:
             logger.error(f"Error processing query: {str(e)}")
-            raise
+            
+            # Return appropriate error response
+            error_response = FinancialAgentResponse(
+                response=f"Xin lỗi, có lỗi xảy ra khi xử lý câu hỏi của bạn: {str(e)}",
+                conversation_id=conversation_id
+            )
+            
+            if stream:
+                async def error_generator():
+                    yield error_response.response
+                return error_generator()
+            else:
+                return error_response
+    
+    @staticmethod
+    def reset_conversation_memory(agent: FinancialReactAgent, conversation_id: Optional[str] = None):
+        """
+        Reset conversation memory for the agent
+        
+        Args:
+            agent: The agent instance
+            conversation_id: Optional specific conversation to reset
+        """
+        try:
+            agent.reset_memory(conversation_id)
+            logger.info(f"Reset memory for conversation: {conversation_id or 'all'}")
+        except Exception as e:
+            logger.error(f"Error resetting memory: {str(e)}")
+    
+    @staticmethod
+    def get_conversation_history(
+        agent: FinancialReactAgent, 
+        conversation_id: str, 
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Get conversation history for a specific conversation
+        
+        Args:
+            agent: The agent instance
+            conversation_id: Conversation ID
+            limit: Maximum number of messages to retrieve
+            
+        Returns:
+            List of conversation messages
+        """
+        try:
+            return agent.get_conversation_history(conversation_id, limit)
+        except Exception as e:
+            logger.error(f"Error retrieving conversation history: {str(e)}")
+            return []
+    
+    @staticmethod
+    def get_agent_info(agent: FinancialReactAgent) -> Dict[str, Any]:
+        """
+        Get information about the agent configuration
+        
+        Args:
+            agent: The agent instance
+            
+        Returns:
+            Dictionary with agent information
+        """
+        try:
+            return {
+                "model_config": {
+                    "reasoning_model": "Claude Sonnet 4 (anthropic.claude-sonnet-4-20250514-v1:0)",
+                    "response_model": "SEA-LION" if agent.use_vietnamese_model else "Claude Sonnet 4",
+                    "streaming_enabled": True
+                },
+                "tools": [tool.name for tool in agent.tools] if hasattr(agent, 'tools') else [],
+                "capabilities": [
+                    "Vietnamese agricultural financial advice",
+                    "Real-time weather information",
+                    "User profile management", 
+                    "Conversation memory",
+                    "RAG knowledge base",
+                    "Multi-turn conversations",
+                    "Streaming responses"
+                ]
+            }
+        except Exception as e:
+            logger.error(f"Error getting agent info: {str(e)}")
+            return {"error": str(e)}

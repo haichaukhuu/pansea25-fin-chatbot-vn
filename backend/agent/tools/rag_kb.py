@@ -3,8 +3,8 @@ import boto3
 from typing import Dict, List, Any, Optional
 from pydantic import Field
 from langchain_community.vectorstores import FAISS
-from langchain.tools import BaseTool
-from langchain.schema import Document
+from langchain_core.tools import BaseTool
+from langchain_core.documents import Document
 from .bedrock_embeddings import BedrockEmbeddings
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

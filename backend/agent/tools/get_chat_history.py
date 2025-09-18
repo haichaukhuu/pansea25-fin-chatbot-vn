@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, List, Type
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 import logging
+import json
 from database.connections.dynamodb_chat_history import DynamoDBChatHistoryConnection
 
 logger = logging.getLogger(__name__)
@@ -89,16 +90,16 @@ class GetChatHistoryTool(BaseTool):
                 if 'sources' in item:
                     try:
                         sources_str = item['sources'].get('S', '[]')
-                        message['sources'] = eval(sources_str)  # Convert string to list
-                    except:
+                        message['sources'] = json.loads(sources_str)  # Convert JSON string to list
+                    except (json.JSONDecodeError, TypeError):
                         message['sources'] = []
                 
                 # Add tools if available
                 if 'tools' in item:
                     try:
                         tools_str = item['tools'].get('S', '[]')
-                        message['tools'] = eval(tools_str)  # Convert string to list
-                    except:
+                        message['tools'] = json.loads(tools_str)  # Convert JSON string to list
+                    except (json.JSONDecodeError, TypeError):
                         message['tools'] = []
                 
                 messages.append(message)

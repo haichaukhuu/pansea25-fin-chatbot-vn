@@ -30,6 +30,9 @@ google-genai
 langchain
 langchain-community
 langchain-google-genai
+langchain-aws  # AWS Bedrock integration
+langchain-core  # Core LangChain components
+langgraph  # For building ReAct agents
 
 # Vector storage and embeddings
 faiss-cpu

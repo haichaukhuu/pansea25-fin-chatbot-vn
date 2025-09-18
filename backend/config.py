@@ -111,7 +111,8 @@ API_CONFIG = {
         "http://127.0.0.1:5173",
         "http://localhost:3000",  # Alternative dev port
         "http://127.0.0.1:3000",
-        "https://agrifinhub.netlify.app"
+        "https://agrifinhub.netlify.app",
+        "https://main.d1tr7oftu7w0ax.amplifyapp.com"
     ]
 }
 
@@ -339,3 +340,14 @@ def get_aws_preference_config() -> Dict[str, str]:
 
 def get_aws_chat_history_config() -> Dict[str, str]:
     return AWS_CONFIG["chat_history"]
+
+def get_aws_bedrock_config() -> Dict[str, str]:
+    """Get AWS Bedrock configuration with proper model IDs"""
+    return {
+        "access_key_id": os.getenv("AWS_BEDROCK_USER_ACCESS_KEY"),
+        "secret_access_key": os.getenv("AWS_BEDROCK_USER_SECRET_ACCESS_KEY"),
+        "region": os.getenv("AWS_AI_REGION", "us-east-1"),
+        "claude_model": "anthropic.claude-sonnet-4-20250514-v1:0",  # Claude Sonnet 4
+        "sealion_model": "arn:aws:bedrock:us-east-1:184208908322:imported-model/za0nlconhflh",  # SEA-LION imported model
+        "embedding_model": "amazon.titan-embed-text-v2:0"
+    }

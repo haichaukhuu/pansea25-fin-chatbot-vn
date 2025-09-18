@@ -1,8 +1,11 @@
 from typing import Dict, Any, Optional
+import logging
 from pydantic import Field
 from langchain.tools import BaseTool
 from external_services.weather_service.weather_service import WeatherService
 from external_services.weather_service.models import WeatherData, WeatherError
+
+logger = logging.getLogger(__name__)
 
 
 class GetWeatherInfoTool(BaseTool):
@@ -52,22 +55,13 @@ class GetWeatherInfoTool(BaseTool):
                 "success": True,
                 "location": result.location,
                 "current_weather": {
-                    "temperature": result.current_weather.temperature,
-                    "humidity": result.current_weather.humidity,
-                    "wind_speed": result.current_weather.wind_speed,
-                    "wind_direction": result.current_weather.wind_direction,
-                    "condition": result.current_weather.condition,
-                    "timestamp": result.current_weather.timestamp.isoformat() if result.current_weather.timestamp else None
+                    "temperature": result.current.temperature_c,
+                    "humidity": result.current.humidity_percent,
+                    "wind_speed": result.current.wind_speed_kmh,
+                    "wind_direction": result.current.wind_direction,
+                    "condition": result.current.condition
                 },
-                "forecast": [
-                    {
-                        "date": item.date.isoformat() if item.date else None,
-                        "min_temp": item.min_temp,
-                        "max_temp": item.max_temp,
-                        "condition": item.condition
-                    }
-                    for item in (result.forecast or [])
-                ] if include_forecast and result.forecast else None,
+                "forecast": self._format_forecast(result.forecast) if include_forecast and result.forecast else None,
                 "agricultural_impact": self._get_agricultural_impact(result)
             }
         else:  # WeatherError
@@ -82,8 +76,42 @@ class GetWeatherInfoTool(BaseTool):
     
     async def _arun(self, location: str, include_forecast: bool = True) -> Dict[str, Any]:
         """Async version of _run."""
-        # For simplicity, we're just calling the sync version
-        return self._run(location, include_forecast)
+        try:
+            # Use the async version of the weather service
+            result = await self.weather_service.get_weather(
+                location=location,
+                include_forecast=include_forecast,
+                similarity_threshold=0.5  # Lower threshold for better matching
+            )
+            
+            # Convert to dictionary for easier handling
+            if isinstance(result, WeatherData):
+                return {
+                    "success": True,
+                    "location": result.location,
+                    "current_weather": {
+                        "temperature": result.current.temperature_c,
+                        "humidity": result.current.humidity_percent,
+                        "wind_speed": result.current.wind_speed_kmh,
+                        "wind_direction": result.current.wind_direction,
+                        "condition": result.current.condition
+                    },
+                    "forecast": self._format_forecast(result.forecast) if result.forecast else [],
+                    "agricultural_impact": self._get_agricultural_impact(result)
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": str(result),
+                    "suggestions": self._get_location_suggestions(location)
+                }
+        except Exception as e:
+            logger.error(f"Error in async weather tool: {e}")
+            return {
+                "success": False,
+                "error": f"Weather service error: {str(e)}",
+                "suggestions": self._get_location_suggestions(location)
+            }
     
     def _get_location_suggestions(self, location: str) -> list[str]:
         """Get location suggestions if the provided location is not found."""
@@ -99,10 +127,10 @@ class GetWeatherInfoTool(BaseTool):
         impacts = {}
         
         # Current weather impacts
-        if weather_data.current_weather:
-            temp = weather_data.current_weather.temperature
-            humidity = weather_data.current_weather.humidity
-            condition = weather_data.current_weather.condition.lower() if weather_data.current_weather.condition else ""
+        if weather_data.current:
+            temp = weather_data.current.temperature_c
+            humidity = weather_data.current.humidity_percent
+            condition = weather_data.current.condition.lower() if weather_data.current.condition else ""
             
             # Temperature impacts
             if temp is not None:
@@ -127,3 +155,51 @@ class GetWeatherInfoTool(BaseTool):
                 impacts["condition"] = "Sunny conditions good for photosynthesis but may increase water requirements."
         
         return impacts
+    
+    def _format_forecast(self, forecast_data) -> list:
+        """Format forecast data from WeatherForecast object."""
+        formatted_forecast = []
+        
+        # Add today's forecast
+        if forecast_data.today:
+            for period in forecast_data.today:
+                formatted_forecast.append({
+                    "day": "today",
+                    "time": period.time,
+                    "temperature": period.temperature_c,
+                    "condition": period.condition,
+                    "humidity": period.humidity_percent,
+                    "wind_speed": period.wind_speed_kmh,
+                    "wind_direction": period.wind_direction,
+                    "precipitation_chance": period.precipitation_chance
+                })
+        
+        # Add tomorrow's forecast
+        if forecast_data.tomorrow:
+            for period in forecast_data.tomorrow:
+                formatted_forecast.append({
+                    "day": "tomorrow",
+                    "time": period.time,
+                    "temperature": period.temperature_c,
+                    "condition": period.condition,
+                    "humidity": period.humidity_percent,
+                    "wind_speed": period.wind_speed_kmh,
+                    "wind_direction": period.wind_direction,
+                    "precipitation_chance": period.precipitation_chance
+                })
+        
+        # Add day after tomorrow's forecast
+        if forecast_data.day_after:
+            for period in forecast_data.day_after:
+                formatted_forecast.append({
+                    "day": "day_after",
+                    "time": period.time,
+                    "temperature": period.temperature_c,
+                    "condition": period.condition,
+                    "humidity": period.humidity_percent,
+                    "wind_speed": period.wind_speed_kmh,
+                    "wind_direction": period.wind_direction,
+                    "precipitation_chance": period.precipitation_chance
+                })
+        
+        return formatted_forecast

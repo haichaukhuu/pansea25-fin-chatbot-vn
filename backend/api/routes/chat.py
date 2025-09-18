@@ -15,25 +15,7 @@ from core.services.chat_history_service import ChatHistoryService
 from api.middleware.auth_middleware import get_current_user
 from database.models.user import User
 
-# Legacy import for backward compatibility
-from ai_models.model_manager import ModelManager
-
 logger = logging.getLogger(__name__)
-
-# Global model manager instance
-_model_manager: Optional[ModelManager] = None
-
-def set_model_manager(model_manager: ModelManager) -> None:
-    """Set the global model manager instance for the chat router."""
-    global _model_manager
-    _model_manager = model_manager
-    logger.info("Model manager set successfully for chat router")
-
-def get_model_manager() -> ModelManager:
-    """Get the global model manager instance."""
-    if _model_manager is None:
-        raise HTTPException(status_code=500, detail="Model manager not initialized")
-    return _model_manager
 
 # Create router
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
@@ -100,20 +82,6 @@ def set_react_agent(agent):
     """Set the ReAct agent instance"""
     global react_agent
     react_agent = agent
-    
-# Legacy model manager for backward compatibility
-model_manager = None
-
-def get_model_manager() -> ModelManager:
-    """Dependency to get model manager instance (legacy)"""
-    global model_manager
-    if model_manager is None:
-        try:
-            model_manager = ModelManager()
-        except Exception as e:
-            logger.error(f"Failed to get model manager: {str(e)}")
-            raise HTTPException(status_code=503, detail="AI models not available")
-    return model_manager
 
 @chat_router.post("/", response_model=ChatResponse)
 async def chat(
@@ -141,7 +109,8 @@ async def chat(
             agent=agent,
             query=request.message,
             user_id=str(current_user.id),
-            conversation_id=conversation_id
+            conversation_id=conversation_id,
+            stream=False  # Explicitly disable streaming for non-streaming endpoint
         )
         
         logger.info(f"Chat response generated using ReAct agent")
@@ -199,38 +168,56 @@ async def chat_stream(
             conversation_id=conversation_id
         )
         
-        # Process query using ReAct agent (non-streaming for now)
-        agent_response = await AgentService.process_query(
+        # Process query using ReAct agent with streaming enabled
+        stream_generator = await AgentService.process_query(
             agent=agent,
             query=request.message,
             user_id=str(current_user.id),
-            conversation_id=conversation_id
-        )
-        
-        logger.info(f"Chat response generated using ReAct agent")
-        
-        # Extract sources and tools from agent response
-        sources = agent_response.sources if hasattr(agent_response, 'sources') else []
-        tools_used = agent_response.tool_usage if hasattr(agent_response, 'tool_usage') else []
-        
-        # Save assistant response to chat history
-        chat_history_service.save_assistant_message(
-            user_id=str(current_user.id),
-            message_content=agent_response.response,
             conversation_id=conversation_id,
-            sources=sources,
-            tools=tools_used
+            stream=True
         )
         
-        # Return a single chunk as a stream
+        logger.info(f"Starting streaming response from ReAct agent")
+        
+        # Collect the final response for saving to chat history
+        collected_response = ""
+        sources = []
+        tools_used = []
+        
+        # Return streaming generator
         async def generate():
-            yield f"data: {json.dumps({'content': agent_response.response, 'type': 'content', 'conversation_id': conversation_id})}\n\n"
+            nonlocal collected_response, sources, tools_used
             
-            # If there are sources, send them as a separate event
+            async for chunk in stream_generator:
+                yield chunk
+                
+                # Parse the SSE data to collect response content
+                if chunk.startswith('data: '):
+                    try:
+                        data = json.loads(chunk[6:])
+                        if data.get('type') == 'response':
+                            collected_response += data.get('content', '')
+                        elif data.get('type') == 'sources':
+                            sources = data.get('sources', [])
+                        elif data.get('type') == 'tools':
+                            tools_used = data.get('tools', [])
+                    except:
+                        pass
+            
+            # Save the complete response to chat history
+            if collected_response:
+                chat_history_service.save_assistant_message(
+                    user_id=str(current_user.id),
+                    message_content=collected_response,
+                    conversation_id=conversation_id,
+                    sources=sources,
+                    tools=tools_used
+                )
+            
+            # Send final metadata and completion event
             if sources:
                 yield f"data: {json.dumps({'sources': sources, 'type': 'sources', 'conversation_id': conversation_id})}\n\n"
             
-            # If there are tools used, send them as a separate event
             if tools_used:
                 yield f"data: {json.dumps({'tools': tools_used, 'type': 'tools', 'conversation_id': conversation_id})}\n\n"
                 
@@ -246,57 +233,7 @@ async def chat_stream(
                     "Access-Control-Allow-Headers": "*",
                 }
             )
-        
-        # Store the full response for saving to history after stream completes
-        full_response_chunks = []
-        
-        # Generate streaming response
-        async def generate():
-            try:
-                async for chunk in model_manager.generate_streaming_response(
-                    prompt=request.message,
-                    context=context
-                ):
-                    # Add chunk to full response
-                    if isinstance(chunk, str):
-                        content = chunk
-                    else:
-                        content = chunk.get('content', '')
-                    
-                    full_response_chunks.append(content)
-                    
-                    # Format as SSE data
-                    yield f"data: {json.dumps({'content': content, 'type': 'content', 'conversation_id': conversation_id})}\n\n"
-                
-                # Stream is complete, save the full response to chat history
-                complete_response = "".join(full_response_chunks)
-                chat_history_service.save_assistant_message(
-                    user_id=str(current_user.id),
-                    message_content=complete_response,
-                    conversation_id=conversation_id,
-                    sources=[],  # Add sources if available in your model response
-                    tools=[]     # Add tools if available in your model response
-                )
-                
-                # Send completion signal
-                yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id})}\n\n"
-                logger.info(f"Completed streaming response and saved to history for conversation: {conversation_id}")
-                
-            except Exception as e:
-                logger.error(f"Streaming generation error: {str(e)}", exc_info=True)
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        
-        return StreamingResponse(
-            generate(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
-        
+            
     except Exception as e:
         logger.error(f"Streaming chat error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate streaming response: {str(e)}")

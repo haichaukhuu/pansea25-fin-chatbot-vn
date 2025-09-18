@@ -242,7 +242,7 @@ class ApiService {
             try {
               const data = JSON.parse(line.slice(6));
               
-              if (data.type === 'content') {
+              if (data.type === 'content' || data.type === 'response') {
                 onChunk(data.content);
               } else if (data.type === 'done') {
                 onComplete(data.conversation_id);

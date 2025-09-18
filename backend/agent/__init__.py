@@ -1,16 +1,18 @@
 from .react_agent import FinancialReactAgent, FinancialAgentResponse
-from .llm_clients import LLMClientFactory, AWSBedrockLLM
+# Backward compatibility alias
+from .react_agent import ImprovedFinancialReactAgent
+from .llm_clients import LLMClientFactory
 from .agent_service import AgentService
 from .tools import RAGKnowledgeBaseTool, GetWeatherInfoTool, GetUserProfileTool, GetChatHistoryTool
 
 __all__ = [
     "FinancialReactAgent", 
-    "FinancialAgentResponse", 
-    "LLMClientFactory", 
-    "AWSBedrockLLM",
+    "FinancialAgentResponse",
+    "ImprovedFinancialReactAgent",  # Backward compatibility
+    "LLMClientFactory",
     "AgentService",
     "RAGKnowledgeBaseTool",
-    "GetWeatherInfoTool",
+    "GetWeatherInfoTool", 
     "GetUserProfileTool",
     "GetChatHistoryTool"
 ]
