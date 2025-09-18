@@ -1,0 +1,28 @@
+{
+  "models": {
+    "reasoning": {
+      "provider": "aws_bedrock",
+      "model_id": "anthropic.claude-sonnet-4-20250514-v1:0",
+      "model_provider": "anthropic",
+      "temperature": 0.2,
+      "max_tokens": 1000,
+      "top_p": 0.9
+    },
+    "response": {
+      "provider": "aws_bedrock",
+      "model_id": "arn:aws:bedrock:us-east-1:184208908322:imported-model/za0nlconhflh",
+      "temperature": 0.7,
+      "max_tokens": 1500,
+      "top_p": 0.9
+    }
+  },
+  "tools": {
+    "rag_kb": {
+      "vector_store_bucket": "agrinfihub-vector-bucket",
+      "available_indices": ["bank", "financial_news", "government"]
+    },
+    "get_weather_info": {
+      "similarity_threshold": 0.5
+    }
+  }
+}

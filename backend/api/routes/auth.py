@@ -8,6 +8,7 @@ from core.models.user import UserCreate, UserLogin, UserResponse
 from core.services.auth_service import AuthService
 from database.repositories.user_repository import UserRepository
 from database.connections.rds_postgres import postgres_connection
+from agent.agent_service import AgentService
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,16 @@ async def login(
             )
         
         logger.info(f"Successful login for: {user_data.email}")
+        
+        # Quietly initialize agent in the background after successful authentication
+        try:
+            # This will warm up the global agent instance for faster first chat
+            _ = AgentService.create_agent()
+            logger.info(f"Agent pre-initialized successfully for user session: {user.id}")
+        except Exception as agent_error:
+            # Log agent initialization failure but don't fail the login
+            logger.warning(f"Agent pre-initialization failed for user {user.id}: {str(agent_error)}")
+        
         return {
             "access_token": access_token,
             "token_type": "bearer",

@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, validator
 import uuid
+import json
 
 
 class QuestionnaireAnswer(BaseModel):
@@ -222,10 +223,18 @@ def convert_to_dynamodb_item(user_preference: UserPreference) -> Dict[str, Any]:
     """
     Convert UserPreference model to preference storage item format.
     """
+    questionnaire_dict = user_preference.questionnaire_answer.dict(by_alias=True)
+    
+    # Convert List fields to JSON strings for DynamoDB storage
+    if 'agriculturalActivity' in questionnaire_dict:
+        questionnaire_dict['agriculturalActivity'] = json.dumps(questionnaire_dict['agriculturalActivity'])
+    if 'supportNeeds' in questionnaire_dict:
+        questionnaire_dict['supportNeeds'] = json.dumps(questionnaire_dict['supportNeeds'])
+    
     return {
         "user_id": user_preference.user_id,
         "user_email": user_preference.user_email,
-        "questionnaire_answer": user_preference.questionnaire_answer.dict(by_alias=True),
+        "questionnaire_answer": questionnaire_dict,
         "recorded_on": user_preference.recorded_on,
         "updated_on": user_preference.updated_on
     }
@@ -235,10 +244,25 @@ def convert_from_dynamodb_item(item: Dict[str, Any]) -> UserPreference:
     """
     Convert preference storage item to UserPreference model.
     """
+    questionnaire_data = item["questionnaire_answer"].copy()
+    
+    # Convert JSON strings back to Lists for List fields
+    if 'agriculturalActivity' in questionnaire_data and isinstance(questionnaire_data['agriculturalActivity'], str):
+        try:
+            questionnaire_data['agriculturalActivity'] = json.loads(questionnaire_data['agriculturalActivity'])
+        except (json.JSONDecodeError, TypeError):
+            questionnaire_data['agriculturalActivity'] = []
+    
+    if 'supportNeeds' in questionnaire_data and isinstance(questionnaire_data['supportNeeds'], str):
+        try:
+            questionnaire_data['supportNeeds'] = json.loads(questionnaire_data['supportNeeds'])
+        except (json.JSONDecodeError, TypeError):
+            questionnaire_data['supportNeeds'] = []
+    
     return UserPreference(
         user_id=item["user_id"],
         user_email=item["user_email"],
-        questionnaire_answer=QuestionnaireAnswer(**item["questionnaire_answer"]),
+        questionnaire_answer=QuestionnaireAnswer(**questionnaire_data),
         recorded_on=item["recorded_on"],
         updated_on=item["updated_on"]
     )

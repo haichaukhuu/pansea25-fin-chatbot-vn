@@ -1,0 +1,10 @@
+{
+  "claude": {
+    "system_prompt": "system_prompt.txt",
+    "human_prompt": "human_prompt.txt"
+  },
+  "llama": {
+    "system_prompt": "system_prompt.txt",
+    "human_prompt": "human_prompt.txt"
+  }
+}
