@@ -57,11 +57,34 @@ backend/
 │       ├── vector_repository.py     # Vector operations
 │       └── chat_repository.py       # Chat history operations
 │
-├──  ai_models/                    # AI Models Integration
-│   ├── llm_client.py                # LLM API client (OpenAI/Claude)
-│   ├── embeddings.py                # Text embedding service
-│   ├── vector_search.py             # Vector similarity search
+├──  agent/                        # AI Agent & Models Integration (Primary)
+│   ├── agent_service.py             # Agent service factory
+│   ├── react_agent.py               # ReAct agent implementation
+│   ├── llm_clients.py               # LLM client factory (Bedrock/Claude)
+│   ├── models/                      # AI models (migrated from ai_models)
+│   │   ├── base_model.py            # Base model interface
+│   │   ├── google_genai_model.py    # Google GenAI models
+│   │   ├── embedding_model.py       # Text embedding models
+│   │   ├── model_factory.py         # Model factory
+│   │   ├── model_manager.py         # Model orchestration
+│   │   └── __init__.py
+│   ├── tools/                       # Agent tools
+│   │   ├── rag_kb.py                # RAG knowledge base tool
+│   │   ├── get_weather_info.py      # Weather information tool
+│   │   ├── get_user_profile.py      # User profile tool
+│   │   ├── get_chat_history.py      # Chat history tool
+│   │   └── __init__.py
+│   ├── prompts/                     # Prompt templates
+│   │   ├── system_prompt.txt        # System prompts
+│   │   ├── human_prompt.txt         # Human prompts
+│   │   └── __init__.py
+│   ├── config/                      # Agent configuration
+│   │   ├── llm_config.json          # LLM configurations
+│   │   └── prompt_config.json       # Prompt configurations
 │   └── __init__.py
+│
+├──  ai_models/                    # LEGACY - Use agent/ instead
+│   └── [deprecated - functionality moved to agent/]
 │
 ├──  utils/                        # Utility functions
 │   ├── logger.py                    # Logging configuration
