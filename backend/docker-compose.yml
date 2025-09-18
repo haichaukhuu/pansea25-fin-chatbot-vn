@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agrifinhub-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Application settings
+      - APP_NAME=AgriFinHub
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      
+      # JWT Authentication
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      
+      # Google GenAI
+      - GOOGLE_GENAI_API_KEY=${GOOGLE_GENAI_API_KEY}
+      
+      # Database (if using PostgreSQL)
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - RDS_DATABASE_URL=${RDS_DATABASE_URL}
+      
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION}
+      - AWS_TRANSCRIBE_ACCESS_KEY_ID=${AWS_TRANSCRIBE_ACCESS_KEY_ID}
+      - AWS_TRANSCRIBE_SECRET_ACCESS_KEY=${AWS_TRANSCRIBE_SECRET_ACCESS_KEY}
+      - AWS_PREFERENCE_ACCESS_KEY_ID=${AWS_PREFERENCE_ACCESS_KEY_ID}
+      - AWS_PREFERENCE_SECRET_ACCESS_KEY=${AWS_PREFERENCE_SECRET_ACCESS_KEY}
+      - PREFERENCE_TABLE_NAME=${PREFERENCE_TABLE_NAME}
+      - PREFERENCE_REGION=${PREFERENCE_REGION}
+      - AWS_CHAT_HISTORY_ACCESS_KEY_ID=${AWS_CHAT_HISTORY_ACCESS_KEY_ID}
+      - AWS_CHAT_HISTORY_SECRET_ACCESS_KEY=${AWS_CHAT_HISTORY_SECRET_ACCESS_KEY}
+      - CHAT_HISTORY_TABLE_NAME=${CHAT_HISTORY_TABLE_NAME}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - agrifinhub-network
+
+  # Optional: PostgreSQL database for local development
+  postgres:
+    image: postgres:15-alpine
+    container_name: agrifinhub-postgres
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - agrifinhub-network
+    profiles:
+      - with-db
+
+volumes:
+  postgres_data:
+
+networks:
+  agrifinhub-network:
+    driver: bridge
