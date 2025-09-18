@@ -516,22 +516,33 @@ Hãy viết một câu trả lời thân thiện, hữu ích và chính xác cho
             try:
                 # Check if we're using the direct SEA-LION client
                 if hasattr(self.response_llm, 'stream_response'):
-                    # Direct SEA-LION client with streaming support
-                    chunk_buffer = ""
-                    async for chunk in self.response_llm.stream_response(
-                        user_query=input_message.content,
-                        claude_analysis=reasoning_content
-                    ):
-                        chunk_buffer += chunk
-                        # Clean each chunk to prevent headers from appearing
-                        cleaned_chunk = clean_response_content(chunk_buffer) if chunk_buffer else chunk
-                        # Only send the new part that was added
-                        if len(cleaned_chunk) > len(chunk_buffer) - len(chunk):
-                            new_content = cleaned_chunk[len(chunk_buffer) - len(chunk):]
-                            yield f"data: {json.dumps({'type': 'response', 'content': new_content})}\n\n"
-                        else:
-                            yield f"data: {json.dumps({'type': 'response', 'content': cleaned_chunk[-len(chunk):] if cleaned_chunk else chunk})}\n\n"
-                elif hasattr(self.response_llm, 'agenerate_response'):
+                    # Try streaming first, but handle permission issues gracefully
+                    try:
+                        chunk_buffer = ""
+                        has_content = False
+                        async for chunk in self.response_llm.stream_response(
+                            user_query=input_message.content,
+                            claude_analysis=reasoning_content
+                        ):
+                            has_content = True
+                            chunk_buffer += chunk
+                            # Clean each chunk to prevent headers from appearing
+                            cleaned_chunk = clean_response_content(chunk_buffer) if chunk_buffer else chunk
+                            # Only send the new part that was added
+                            if len(cleaned_chunk) > len(chunk_buffer) - len(chunk):
+                                new_content = cleaned_chunk[len(chunk_buffer) - len(chunk):]
+                                yield f"data: {json.dumps({'type': 'response', 'content': new_content})}\n\n"
+                            else:
+                                yield f"data: {json.dumps({'type': 'response', 'content': cleaned_chunk[-len(chunk):] if cleaned_chunk else chunk})}\n\n"
+                        
+                        # If we got here and have content, streaming worked
+                        if has_content:
+                            return
+                    except Exception as stream_error:
+                        logger.warning(f"Streaming failed, falling back to non-streaming: {stream_error}")
+                        # Fall through to non-streaming fallback
+                
+                if hasattr(self.response_llm, 'agenerate_response'):
                     # Direct SEA-LION client without streaming (fallback to async)
                     response = await self.response_llm.agenerate_response(
                         user_query=input_message.content,

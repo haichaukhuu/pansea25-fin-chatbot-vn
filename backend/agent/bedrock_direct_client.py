@@ -101,12 +101,15 @@ class BedrockDirectClient:
         if not target_model_id:
             raise ValueError("No model_id provided either in constructor or method call")
         
-        # Prepare the payload for SEA-LION
+        # Prepare the payload for SEA-LION with improved parameters to prevent hashtag spam
         payload = {
             "prompt": prompt,
             "temperature": temperature,
             "max_new_tokens": max_tokens,
-            "top_p": 0.9
+            "top_p": 0.8,  # Lower top_p for more focused responses
+            "top_k": 40,   # Add top_k for better quality
+            "repetition_penalty": 1.1,  # Prevent repetitive hashtags
+            "do_sample": True
         }
         
         try:
@@ -120,17 +123,34 @@ class BedrockDirectClient:
             )
             
             response_body = json.loads(response['body'].read())
+            logger.debug(f"Model response format: {response_body}")
             
             # Extract the generated text from response
-            # SEA-LION response format: {"generated_text": "..."}
-            if "generated_text" in response_body:
-                generated_text = response_body["generated_text"]
-                # Remove the original prompt from the response if it's included
-                if generated_text.startswith(prompt):
-                    generated_text = generated_text[len(prompt):].strip()
+            # SEA-LION response format: {"generation": "...", "stop_reason": "...", ...}
+            if "generation" in response_body:
+                generation = response_body["generation"]
+                stop_reason = response_body.get("stop_reason", "unknown")
                 
-                logger.debug(f"Model response length: {len(generated_text)}")
-                return generated_text
+                # Remove the original prompt from the response if it's included
+                if generation.startswith(prompt):
+                    generation = generation[len(prompt):].strip()
+
+                # Check for quality issues
+                if stop_reason == "length":
+                    logger.warning(f"Model hit token limit. Response may be truncated. Stop reason: {stop_reason}")
+                
+                # Check if response is mostly hashtags (poor quality indicator)
+                hashtag_ratio = generation.count('#') / max(len(generation), 1)
+                if hashtag_ratio > 0.1:  # More than 10% hashtags indicates poor output
+                    logger.warning(f"Response contains excessive hashtags ({hashtag_ratio:.2%}), may indicate poor generation")
+                    # Try to extract meaningful content before hashtags
+                    hashtag_start = generation.find('#')
+                    if hashtag_start > 50:  # If there's substantial content before hashtags
+                        generation = generation[:hashtag_start].strip()
+                        logger.info("Extracted content before hashtag spam")
+                
+                logger.debug(f"Model response length: {len(generation)}, stop_reason: {stop_reason}")
+                return generation
             else:
                 logger.error(f"Unexpected response format: {response_body}")
                 return "Error: Unexpected response format from model"
@@ -217,11 +237,19 @@ class BedrockDirectClient:
             # Process the streaming response
             for event in response['body']:
                 if 'chunk' in event:
-                    chunk_data = json.loads(event['chunk']['bytes'])
-                    if 'generated_text' in chunk_data:
-                        chunk_text = chunk_data['generated_text']
-                        if chunk_text:  # Only yield non-empty chunks
-                            yield chunk_text
+                    chunk_raw = event['chunk']['bytes']
+                    chunk_data = json.loads(chunk_raw)
+                    
+                    # SEA-LION streaming format: {"bytes": "base64_encoded_data", "p": "..."}
+                    if 'bytes' in chunk_data:
+                        import base64
+                        decoded_bytes = base64.b64decode(chunk_data['bytes'])
+                        decoded_data = json.loads(decoded_bytes)
+                        
+                        if 'generation' in decoded_data:
+                            chunk_text = decoded_data['generation']
+                            if chunk_text:  # Only yield non-empty chunks
+                                yield chunk_text
                             
         except ClientError as e:
             logger.error(f"AWS Bedrock streaming API error: {e}")
@@ -294,21 +322,19 @@ class SEALionClient:
         Returns:
             Vietnamese response text
         """
-        prompt = f"""Dựa trên phân tích từ hệ thống AI và câu hỏi của người dùng, hãy trả lời bằng tiếng Việt.
+        prompt = f"""Bạn là chuyên gia tư vấn nông nghiệp và tài chính cho nông dân Việt Nam. Hãy trả lời câu hỏi dưới đây một cách chính xác và hữu ích.
 
-Câu hỏi của người dùng: {user_query}
+Câu hỏi: {user_query}
 
-Phân tích từ hệ thống: {claude_analysis}
+Thông tin tham khảo: {claude_analysis}
 
-Hãy trả lời một cách thân thiện, hữu ích và chính xác cho nông dân Việt Nam. Sử dụng ngôn ngữ đơn giản, dễ hiểu và đưa ra lời khuyên thiết thực. Câu trả lời phải:
+Yêu cầu câu trả lời:
+- Sử dụng tiếng Việt dễ hiểu
+- Đưa ra lời khuyên thực tế và cụ thể
+- Tập trung vào nội dung chính, không sử dụng hashtag
+- Câu trả lời ngắn gọn, từ 50-200 từ
 
-1. Trả lời trực tiếp câu hỏi của người dùng
-2. Sử dụng thông tin từ phân tích của hệ thống
-3. Đưa ra lời khuyên cụ thể và khả thi
-4. Sử dụng ngôn ngữ thân thiện, phù hợp với nông dân Việt Nam
-5. Tránh sử dụng thuật ngữ phức tạp, giải thích đơn giản khi cần
-
-Trả lời ngay bằng tiếng Việt"""
+"""
 
         return self.client.invoke(
             prompt=prompt,
@@ -335,21 +361,19 @@ Trả lời ngay bằng tiếng Việt"""
         Returns:
             Vietnamese response text
         """
-        prompt = f"""Dựa trên phân tích từ hệ thống AI và câu hỏi của người dùng, hãy trả lời bằng tiếng Việt.
+        prompt = f"""Bạn là chuyên gia tư vấn nông nghiệp và tài chính cho nông dân Việt Nam. Hãy trả lời câu hỏi dưới đây một cách chính xác và hữu ích.
 
-Câu hỏi của người dùng: {user_query}
+Câu hỏi: {user_query}
 
-Phân tích từ hệ thống: {claude_analysis}
+Thông tin tham khảo: {claude_analysis}
 
-Hãy trả lời một cách thân thiện, hữu ích và chính xác cho nông dân Việt Nam. Sử dụng ngôn ngữ đơn giản, dễ hiểu và đưa ra lời khuyên thiết thực. Câu trả lời phải:
+Yêu cầu câu trả lời:
+- Sử dụng tiếng Việt dễ hiểu
+- Đưa ra lời khuyên thực tế và cụ thể
+- Tập trung vào nội dung chính, không sử dụng hashtag
+- Câu trả lời ngắn gọn, từ 50-200 từ
 
-1. Trả lời trực tiếp câu hỏi của người dùng
-2. Sử dụng thông tin từ phân tích của hệ thống
-3. Đưa ra lời khuyên cụ thể và khả thi
-4. Sử dụng ngôn ngữ thân thiện, phù hợp với nông dân Việt Nam
-5. Tránh sử dụng thuật ngữ phức tạp, giải thích đơn giản khi cần
-
-Trả lời ngay bằng tiếng Việt """
+"""
 
         return await self.client.ainvoke(
             prompt=prompt,
@@ -376,21 +400,19 @@ Trả lời ngay bằng tiếng Việt """
         Yields:
             Chunks of Vietnamese response text as they are generated
         """
-        prompt = f"""Dựa trên phân tích từ hệ thống AI và câu hỏi của người dùng, hãy trả lời bằng tiếng Việt.
+        prompt = f"""Bạn là chuyên gia tư vấn nông nghiệp và tài chính cho nông dân Việt Nam. Hãy trả lời câu hỏi dưới đây một cách chính xác và hữu ích.
 
-Câu hỏi của người dùng: {user_query}
+Câu hỏi: {user_query}
 
-Phân tích từ hệ thống: {claude_analysis}
+Thông tin tham khảo: {claude_analysis}
 
-Hãy trả lời một cách thân thiện, hữu ích và chính xác cho nông dân Việt Nam. Sử dụng ngôn ngữ đơn giản, dễ hiểu và đưa ra lời khuyên thiết thực. Câu trả lời phải:
+Yêu cầu câu trả lời:
+- Sử dụng tiếng Việt dễ hiểu
+- Đưa ra lời khuyên thực tế và cụ thể
+- Tập trung vào nội dung chính, không sử dụng hashtag
+- Câu trả lời ngắn gọn, từ 50-200 từ
 
-1. Trả lời trực tiếp câu hỏi của người dùng
-2. Sử dụng thông tin từ phân tích của hệ thống
-3. Đưa ra lời khuyên cụ thể và khả thi
-4. Sử dụng ngôn ngữ thân thiện, phù hợp với nông dân Việt Nam
-5. Tránh sử dụng thuật ngữ phức tạp, giải thích đơn giản khi cần
-
-Trả lời ngay bằng tiếng Việt """
+"""
 
         async for chunk in self.client.astream(
             prompt=prompt,
