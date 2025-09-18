@@ -87,10 +87,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
     selectChat(chatId);
   };
 
-  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+  const handleDeleteChat = async (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this chat?')) {
-      deleteChat(chatId);
+      try {
+        await deleteChat(chatId);
+      } catch (error) {
+        console.error('Failed to delete chat:', error);
+        // Optionally show user-friendly error message
+      }
     }
   };
 

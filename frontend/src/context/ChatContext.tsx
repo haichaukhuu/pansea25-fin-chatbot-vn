@@ -19,7 +19,7 @@ interface ChatContextType {
   stopGeneration: () => void;
   searchChats: (query: string) => Chat[];
   uploadFile: (file: File) => Promise<void>;
-  deleteChat: (chatId: string) => void;
+  deleteChat: (chatId: string) => Promise<void>;
   initializeForNewUser: () => Promise<void>;
   loadChatHistory: () => Promise<void>;
   loadMoreConversations: () => Promise<void>;
@@ -748,15 +748,32 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setFiles(prev => [newFile, ...prev]);
   };
 
-  const deleteChat = (chatId: string) => {
+  const deleteChat = async (chatId: string) => {
     // Prevent deletion of demo chat
     if (chatId === 'demo-chat-viet') {
       return;
     }
     
+    const chatToDelete = chats.find(chat => chat.id === chatId);
+    
+    // If chat has a conversation ID, delete from backend
+    if (chatToDelete?.conversationId) {
+      try {
+        await apiService.deleteConversation(chatToDelete.conversationId);
+        console.log(`Successfully deleted conversation ${chatToDelete.conversationId} from backend`);
+      } catch (error) {
+        console.error('Failed to delete conversation from backend:', error);
+        // Still proceed with local deletion even if backend fails
+      }
+    }
+    
+    // Remove from local state
     setChats(prev => prev.filter(chat => chat.id !== chatId));
+    
+    // If the deleted chat was currently selected, switch to another chat
     if (currentChat?.id === chatId) {
-      setCurrentChat(chats.length > 1 ? chats[0] : null);
+      const remainingChats = chats.filter(chat => chat.id !== chatId);
+      setCurrentChat(remainingChats.length > 0 ? remainingChats[0] : null);
     }
   };
 
