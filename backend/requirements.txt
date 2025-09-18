@@ -33,10 +33,12 @@ langchain-google-genai
 
 # Vector storage and embeddings
 faiss-cpu
-sentence-transformers
 
-# AWS SDK
+# AWS SDK and Bedrock dependencies
 boto3
+boto3-stubs
+botocore-stubs
+awscrt  # For enhanced AWS performance
 
 # Additional dependencies
 email-validator

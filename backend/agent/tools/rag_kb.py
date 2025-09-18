@@ -3,9 +3,12 @@ import boto3
 from typing import Dict, List, Any, Optional
 from pydantic import Field
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.tools import BaseTool
 from langchain.schema import Document
+from .bedrock_embeddings import BedrockEmbeddings
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from config import Config
 
 
 class RAGKnowledgeBaseTool(BaseTool):
@@ -17,7 +20,8 @@ class RAGKnowledgeBaseTool(BaseTool):
     
     # Define fields for Pydantic v2 compatibility
     vector_store_bucket: str = Field(default="agrinfihub-vector-bucket", description="The S3 bucket name where vector indices are stored")
-    embedding_model_name: str = Field(default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", description="The HuggingFace model to use for embeddings")
+    embedding_model_name: str = Field(default="amazon.titan-embed-text-v2:0", description="The AWS Bedrock model ID to use for embeddings")
+    region_name: str = Field(default="us-east-1", description="AWS region for Bedrock service")
     
     # Fields for non-serializable attributes
     s3_client: Any = Field(default=None, exclude=True)
@@ -32,23 +36,35 @@ class RAGKnowledgeBaseTool(BaseTool):
     }
     
     def __init__(self, vector_store_bucket: str = "agrinfihub-vector-bucket", 
-                 embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", **kwargs):
+                 embedding_model: str = "amazon.titan-embed-text-v2:0", **kwargs):
         """Initialize the RAG knowledge base tool.
         
         Args:
             vector_store_bucket: The S3 bucket name where vector indices are stored
-            embedding_model: The HuggingFace model to use for embeddings
+            embedding_model: The AWS Bedrock model ID to use for embeddings
         """
+        # Get AWS region from config
+        region_name = Config.AWS_BEDROCK_REGION or kwargs.get("region_name", "us-east-1")
+        
         # Initialize parent class with proper field values
         super().__init__(
             vector_store_bucket=vector_store_bucket,
             embedding_model_name=embedding_model,
+            region_name=region_name,
             **kwargs
         )
         
-        # Set up non-serializable attributes after parent initialization  
-        self.s3_client = boto3.client('s3')
-        self.embedding_model = HuggingFaceEmbeddings(model_name=embedding_model)
+        # Set up non-serializable attributes after parent initialization
+        # Use environment credentials set up by AWS SDK and config.py
+        # This keeps the Bedrock API separate from Transcribe API
+        
+        # Create session with region only
+        session = boto3.Session(region_name=region_name)
+        
+        # Create S3 client from session - uses AWS SDK's default credential chain
+        # This keeps the S3 client separate from Transcribe
+        self.s3_client = session.client('s3', region_name=region_name)
+        self.embedding_model = BedrockEmbeddings(model_id=embedding_model, region_name=region_name)
         self.vector_stores = {}
         self.available_indices = ["bank", "financial_news", "government"]
     

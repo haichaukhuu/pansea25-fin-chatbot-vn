@@ -20,6 +20,21 @@ from ai_models.model_manager import ModelManager
 
 logger = logging.getLogger(__name__)
 
+# Global model manager instance
+_model_manager: Optional[ModelManager] = None
+
+def set_model_manager(model_manager: ModelManager) -> None:
+    """Set the global model manager instance for the chat router."""
+    global _model_manager
+    _model_manager = model_manager
+    logger.info("Model manager set successfully for chat router")
+
+def get_model_manager() -> ModelManager:
+    """Get the global model manager instance."""
+    if _model_manager is None:
+        raise HTTPException(status_code=500, detail="Model manager not initialized")
+    return _model_manager
+
 # Create router
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 

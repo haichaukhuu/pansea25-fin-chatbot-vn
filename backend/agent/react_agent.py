@@ -120,10 +120,11 @@ class FinancialReactAgent:
               "- Trả lời cuối cùng (tiếng Việt): rõ ràng, súc tích, có thể thực hành\n\n"
               "Lịch sử hội thoại (tóm tắt): {chat_history}\n\n"
               "Lưu ý: Nếu thiếu thông tin, hãy hỏi lại để làm rõ. Tránh bịa đặt."
+              "{agent_scratchpad}"
         )
+        # Create prompt without explicitly providing input_variables (let it parse them from template)
         prompt = PromptTemplate.from_template(
-            template=react_instructions,
-            input_variables=["input", "chat_history", "tools", "tool_names", "agent_scratchpad"]
+            template=react_instructions
         )
         
         # Create the agent

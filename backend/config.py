@@ -7,6 +7,23 @@ import sys
 # Load environment variables
 load_dotenv()
 
+# Set AWS credentials in environment variables for boto3
+def setup_aws_credentials():
+    """Set up AWS credentials in environment variables for boto3 to find"""
+    # Don't use Transcribe credentials for general AWS services
+    # This ensures separation between transcribe and other services like Bedrock
+    
+    # Set default AWS region if not already set
+    if not os.environ.get("AWS_DEFAULT_REGION"):
+        os.environ["AWS_DEFAULT_REGION"] = os.environ.get("AWS_REGION", "ap-southeast-1")
+        
+    # Set AWS Bedrock-specific region
+    if not os.environ.get("AWS_BEDROCK_REGION"):
+        os.environ["AWS_BEDROCK_REGION"] = "us-east-1"  # Default region for Bedrock
+
+# Initialize AWS credentials
+setup_aws_credentials()
+
 class Config:
     """Application configuration"""
     
@@ -31,7 +48,23 @@ class Config:
     
     # AI Model settings
     GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY")
-        
+    
+    # AWS S3 settings for vector store
+    AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
+    AWS_S3_VECTOR_BUCKET_NAME = os.getenv("AWS_S3_VECTOR_BUCKET_NAME")
+    
+    # AWS Bedrock settings
+    AWS_BEDROCK_REGION = os.getenv("AWS_BEDROCK_REGION", "us-east-1")
+    AWS_BEDROCK_API_KEY_NAME = os.getenv("AWS_BEDROCK_API_KEY_NAME")
+    AWS_BEDROCK_API_KEY = os.getenv("AWS_BEDROCK_API_KEY")
+    AWS_BEDROCK_EMBEDDING_MODEL = os.getenv("AWS_BEDROCK_EMBEDDING_MODEL", "amazon.titan-embed-text-v2:0")
+    AWS_BEDROCK_CLAUDE_MODEL = os.getenv("AWS_BEDROCK_CLAUDE_MODEL", "anthropic.claude-sonnet-4-20250514-v1:0")
+    
+    # AWS credentials for all services
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_TRANSCRIBE_ACCESS_KEY_ID")  # Using Transcribe keys for all AWS services
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_TRANSCRIBE_SECRET_ACCESS_KEY")
+    AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-1")
+
     # Legacy DynamoDB settings (deprecated - use AWS_CONFIG instead)
     DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "Preference")
     DYNAMODB_REGION = os.getenv("DYNAMODB_REGION", "ap-southeast-1")
@@ -170,6 +203,12 @@ AWS_CONFIG = {
         "secret_access_key": os.getenv("AWS_CHAT_HISTORY_SECRET_ACCESS_KEY"),
         "region": os.getenv("AWS_REGION", "ap-southeast-1"),
         "table_name": os.getenv("CHAT_HISTORY_TABLE_NAME", "ChatHistory")
+    },
+    "bedrock": {
+        "access_key_id": os.getenv("AWS_BEDROCK_ACCESS_KEY_ID"),
+        "secret_access_key": os.getenv("AWS_BEDROCK_SECRET_ACCESS_KEY"),
+        "region": os.getenv("AWS_BEDROCK_REGION", "us-east-1"),
+        "model_id": os.getenv("AWS_BEDROCK_MODEL_ID", "amazon.titan-embed-text-v2:0")
     }
 }
 
@@ -193,10 +232,12 @@ Trả lời bằng tiếng Việt, thân thiện và dễ hiểu."""
 LANGCHAIN_CONFIG = {
     "use_memory": True,
     "memory_window_size": 5,
-    "embedding_model": "all-MiniLM-L6-v2",
+    "embedding_model": "amazon.titan-embed-text-v2:0",
+    "embedding_model_type": "bedrock",
     "vector_store": "faiss",
     "chunk_size": 1000,
-    "chunk_overlap": 200
+    "chunk_overlap": 200,
+    "bedrock_region": os.getenv("AWS_BEDROCK_REGION", "us-east-1")
 }
 
 def get_config() -> Dict[str, Any]:
