@@ -52,7 +52,7 @@ class LLMClientFactory:
     @staticmethod
     def create_claude_chat_model(
         temperature: float = 0.2, 
-        max_tokens: int = 4000, 
+        max_tokens: int = 50000,  
         model_id: Optional[str] = None
     ):
         """
@@ -103,7 +103,7 @@ class LLMClientFactory:
     @staticmethod
     def create_sealion_direct_client(
         temperature: float = 0.3, 
-        max_tokens: int = 2000
+        max_tokens: int = 50000  
     ):
         """
         Create SEA-LION direct client using boto3 for imported models.
@@ -139,7 +139,7 @@ class LLMClientFactory:
     @staticmethod
     def create_sealion_llm(
         temperature: float = 0.3, 
-        max_tokens: int = 2000,
+        max_tokens: int = 50000,  
         model_id: Optional[str] = None,
         use_direct_client: bool = True
     ):
@@ -196,7 +196,7 @@ class LLMClientFactory:
     @staticmethod
     def create_llama4_maverick_llm(
         temperature: float = 0.4, 
-        max_tokens: int = 2000,
+        max_tokens: int = 50000,  
         model_id: Optional[str] = None
     ):
         """
@@ -248,7 +248,7 @@ class LLMClientFactory:
         )
     
     @staticmethod
-    def create_llm(model_name: str, temperature: float = 0.7, max_tokens: int = 1000):
+    def create_llm(model_name: str, temperature: float = 0.7, max_tokens: int = 50000):  
         """
         Create a generic Bedrock LLM client by model name/ID.
         
@@ -271,7 +271,7 @@ class LLMClientFactory:
             return LLMClientFactory.create_claude_chat_model(temperature, max_tokens, model_name)
     
     @staticmethod
-    def create_claude_llm(temperature: float = 0.2, max_tokens: int = 4000, model_id: Optional[str] = None):
+    def create_claude_llm(temperature: float = 0.2, max_tokens: int = 50000, model_id: Optional[str] = None):
         """
         Create Claude Sonnet 4 LLM client using ChatBedrock.
         This is the preferred method for Claude models due to better streaming support.
@@ -287,7 +287,7 @@ class LLMClientFactory:
         return LLMClientFactory.create_claude_chat_model(temperature, max_tokens, model_id)
     
     @staticmethod
-    def create_llama_llm(temperature: float = 0.3, max_tokens: int = 2000):
+    def create_llama_llm(temperature: float = 0.3, max_tokens: int = 50000):
         """
         Create SEA-LION LLM client for Vietnamese response generation.
         

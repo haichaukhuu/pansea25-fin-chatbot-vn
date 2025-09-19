@@ -2,11 +2,8 @@
 Direct AWS Bedrock Client for Imported Models
 
 This module provides direct boto3 integration for AWS Bedrock imported models
-that require InvokeModel and InvokeModelWithResponseStream calls instead of
-standard LangChain integrations.
-
+that require InvokeModel and InvokeModelWithResponseStream calls instead of standard LangChain integrations
 Specifically designed for SEA-LION imported model:
-ModelID: arn:aws:bedrock:us-east-1:184208908322:imported-model/za0nlconhflh
 """
 
 import asyncio
@@ -82,7 +79,7 @@ class BedrockDirectClient:
         self, 
         prompt: str, 
         temperature: float = 0.3, 
-        max_tokens: int = 2000,
+        max_tokens: int = 50000,  
         model_id: str = None
     ) -> str:
         """
@@ -166,7 +163,7 @@ class BedrockDirectClient:
         self, 
         prompt: str, 
         temperature: float = 0.3, 
-        max_tokens: int = 2000,
+        max_tokens: int = 50000,
         model_id: str = None
     ) -> str:
         """
@@ -197,7 +194,7 @@ class BedrockDirectClient:
         self, 
         prompt: str, 
         temperature: float = 0.3, 
-        max_tokens: int = 2000,
+        max_tokens: int = 50000,  
         model_id: str = None
     ) -> Iterator[str]:
         """
@@ -262,7 +259,7 @@ class BedrockDirectClient:
         self, 
         prompt: str, 
         temperature: float = 0.3, 
-        max_tokens: int = 2000,
+        max_tokens: int = 50000,
         model_id: str = None
     ) -> AsyncGenerator[str, None]:
         """
@@ -308,7 +305,7 @@ class SEALionClient:
         user_query: str, 
         claude_analysis: str, 
         temperature: float = 0.3,
-        max_tokens: int = 2000
+        max_tokens: int = 50000  
     ) -> str:
         """
         Generate a Vietnamese response based on user query and Claude's analysis.
@@ -347,7 +344,7 @@ Yêu cầu câu trả lời:
         user_query: str, 
         claude_analysis: str, 
         temperature: float = 0.3,
-        max_tokens: int = 2000
+        max_tokens: int = 50000
     ) -> str:
         """
         Generate a Vietnamese response asynchronously.
@@ -386,7 +383,7 @@ Yêu cầu câu trả lời:
         user_query: str, 
         claude_analysis: str, 
         temperature: float = 0.3,
-        max_tokens: int = 2000
+        max_tokens: int = 50000
     ) -> AsyncGenerator[str, None]:
         """
         Stream a Vietnamese response in real-time.

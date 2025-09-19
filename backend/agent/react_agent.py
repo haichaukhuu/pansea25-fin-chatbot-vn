@@ -136,7 +136,7 @@ class FinancialReactAgent:
         # Initialize LLMs
         self.reasoning_llm = LLMClientFactory.create_claude_llm(
             temperature=0.2,
-            max_tokens=4000
+            max_tokens=50000  
         )
         
         self.response_llm = None
@@ -145,7 +145,7 @@ class FinancialReactAgent:
                 # Use the new direct client for SEA-LION imported model
                 self.response_llm = LLMClientFactory.create_sealion_direct_client(
                     temperature=0.3,
-                    max_tokens=2000
+                    max_tokens=50000  
                 )
                 logger.info("Successfully initialized SEA-LION direct client for Vietnamese responses")
             except Exception as e:
@@ -154,7 +154,7 @@ class FinancialReactAgent:
                 try:
                     self.response_llm = LLMClientFactory.create_llama4_maverick_llm(
                         temperature=0.4,
-                        max_tokens=2000
+                        max_tokens=50000  
                     )
                     logger.info("Successfully initialized Llama4 Maverick as fallback chat model")
                     # Keep use_vietnamese_model=True since we have a chat model
