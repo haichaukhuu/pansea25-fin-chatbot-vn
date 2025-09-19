@@ -16,7 +16,7 @@ AgriFinHub equips farmers with the skills to make informed decisions, manage res
 ### Note: Make sure you have Python 3.9+ and Node.js installed on your machine. Please follow the steps shown on their respective websites.
 
 1. Clone the repository to your local machine.
-2. Copy the .env.example file to .env and fill in the required environment variables.
+2. Navigate to the `backend` directory, make a new file `.env` and copy the `.env.example` file to `.env` and fill in your own environment variables.
 3. Create two terminals in your preferred IDE (e.g., VSCode).
 4. In the first terminal, navigate to the `backend` directory and run the following commands to set up and start the backend server. It's best to use a virtual environment for time saving:
    - For Windows:
