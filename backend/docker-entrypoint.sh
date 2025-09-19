@@ -57,10 +57,6 @@ fi
 # Validate critical environment variables
 echo "Validating environment variables..."
 
-if [ -z "$GOOGLE_GENAI_API_KEY" ]; then
-    echo "Warning: GOOGLE_GENAI_API_KEY is not set. AI features may not work."
-fi
-
 if [ -z "$JWT_SECRET_KEY" ]; then
     echo "Error: JWT_SECRET_KEY is required for authentication."
     exit 1
