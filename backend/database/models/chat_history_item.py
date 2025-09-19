@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime
 from typing import List, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field
@@ -44,6 +45,24 @@ class ChatHistoryItem(BaseModel):
             created_at=now.isoformat()
         )
     
+    def _convert_to_dynamodb_format(self, obj: Any) -> Dict[str, Any]:
+        """Convert a Python object to DynamoDB format with proper type annotations."""
+        if isinstance(obj, bool):  # Check bool before int since bool is subclass of int
+            return {"BOOL": obj}
+        elif isinstance(obj, str):
+            return {"S": obj}
+        elif isinstance(obj, (int, float)):
+            return {"N": str(obj)}
+        elif isinstance(obj, list):
+            return {"L": [self._convert_to_dynamodb_format(item) for item in obj]}
+        elif isinstance(obj, dict):
+            return {"M": {k: self._convert_to_dynamodb_format(v) for k, v in obj.items()}}
+        elif obj is None:
+            return {"NULL": True}
+        else:
+            # Fallback: convert to string
+            return {"S": str(obj)}
+
     def to_dynamodb_item(self) -> Dict[str, Any]:
         """Convert the model to a DynamoDB item format."""
         return {
@@ -52,7 +71,31 @@ class ChatHistoryItem(BaseModel):
             "conversation_id": {"S": self.conversation_id},
             "message_type": {"S": self.message_type},
             "content": {"S": self.content},
-            "sources": {"L": [{"M": source} for source in self.sources]} if self.sources else {"L": []},
-            "tools": {"L": [{"M": tool} for tool in self.tools]} if self.tools else {"L": []},
+            "sources": {"S": json.dumps(self.sources) if self.sources else "[]"},
+            "tools": {"S": json.dumps(self.tools) if self.tools else "[]"},
             "created_at": {"S": self.created_at}
         }
+
+    @classmethod
+    def from_dynamodb_item(cls, item: Dict[str, Any]) -> "ChatHistoryItem":
+        """Create a ChatHistoryItem from a DynamoDB item."""
+        try:
+            sources = json.loads(item.get('sources', {}).get('S', '[]'))
+        except (json.JSONDecodeError, KeyError):
+            sources = []
+            
+        try:
+            tools = json.loads(item.get('tools', {}).get('S', '[]'))
+        except (json.JSONDecodeError, KeyError):
+            tools = []
+
+        return cls(
+            user_id=item.get('user_id', {}).get('S', ''),
+            timestamp=int(item.get('timestamp', {}).get('N', '0')),
+            conversation_id=item.get('conversation_id', {}).get('S', ''),
+            message_type=item.get('message_type', {}).get('S', ''),
+            content=item.get('content', {}).get('S', ''),
+            sources=sources,
+            tools=tools,
+            created_at=item.get('created_at', {}).get('S', '')
+        )

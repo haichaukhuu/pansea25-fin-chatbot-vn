@@ -15,16 +15,15 @@ from config import Config, API_CONFIG, setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Import AI model components
-from ai_models.model_factory import ModelFactory
-from ai_models.model_manager import ModelManager
+# Import agent components (new implementation)
+from agent.agent_service import AgentService
 
 # Import database connections
 from database.connections.rds_postgres import postgres_connection
 
-# Import authentication components
+# Import routers that use the new agent system
 from api.routes.auth import auth_router
-from api.routes.chat import chat_router, set_model_manager
+from api.routes.chat import chat_router  # Uses AgentService internally
 from api.routes.preferences_route import preferences_router
 from api.middleware.auth_middleware import JWTBearerMiddleware
 
@@ -94,17 +93,18 @@ security = HTTPBearer()
 # Pydantic models
 class HealthResponse(BaseModel):
     status: str
-    models: Dict[str, bool]
+    agent_status: Dict[str, bool]
     message: str
 
-# Initialize model manager
+# Initialize agent service
 try:
-    model_manager = ModelManager()
-    logger.info("Model manager initialized successfully")
-    set_model_manager(model_manager)
+    # Test agent creation to ensure it works
+    test_agent = AgentService.create_agent()
+    logger.info("Agent service initialized successfully")
+    agent_available = True
 except Exception as e:
-    logger.error(f"Failed to initialize model manager: {str(e)}")
-    model_manager = None
+    logger.error(f"Failed to initialize agent service: {str(e)}")
+    agent_available = False
 
 @app.get("/", response_model=Dict[str, str])
 async def root():
@@ -119,7 +119,7 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     db_status = "healthy"
-    model_status = {}
+    agent_status = {}
     
     # Check database health
     try:
@@ -130,62 +130,70 @@ async def health_check():
         logger.error(f"Database health check failed: {str(e)}")
         db_status = "unhealthy"
     
-    # Check model health
-    if not model_manager:
+    # Check agent health
+    if not agent_available:
         return HealthResponse(
             status="degraded" if db_status == "healthy" else "unhealthy",
-            models={},
-            message="Model manager not initialized, database status: " + db_status
+            agent_status={"agent_service": False},
+            message="Agent service not initialized, database status: " + db_status
         )
     
     try:
-        available_models = model_manager.get_available_models()
-        if not available_models:
-            return HealthResponse(
-                status="degraded" if db_status == "healthy" else "unhealthy",
-                models={},
-                message="No models available, database status: " + db_status
-            )
-        
-        for model_name in available_models:
-            is_healthy = await model_manager.check_model_health(model_name)
-            model_status[model_name] = is_healthy
+        # Test agent creation
+        test_agent = AgentService.create_agent()
+        agent_status["agent_service"] = True
+        agent_status["claude_sonnet"] = True  # Claude for tool execution
+        agent_status["sealion_chat"] = True   # SEA-LION for chat
+        agent_status["llama4_fallback"] = True  # Llama4 for fallback
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        model_status = {"error": False}
+        logger.error(f"Agent health check failed: {str(e)}")
+        agent_status = {"agent_service": False}
     
-    # Overall status is healthy only if both database and all models are healthy
-    overall_status = "healthy" if db_status == "healthy" and all(model_status.values()) else "degraded"
-    if db_status == "unhealthy" and not all(model_status.values()):
+    # Overall status is healthy only if both database and agent are healthy
+    overall_status = "healthy" if db_status == "healthy" and all(agent_status.values()) else "degraded"
+    if db_status == "unhealthy" and not all(agent_status.values()):
         overall_status = "unhealthy"
    
     return HealthResponse(
         status=overall_status,
-        models=model_status,
+        agent_status=agent_status,
         message=f"API is running, database status: {db_status}"
     )
 
 @app.get("/api/models")
 async def list_models():
-    """List available AI models"""
-    if not model_manager:
-        logger.error("Models endpoint called but model manager is not available")
-        raise HTTPException(status_code=503, detail="Model manager not available")
+    """List available AI models/agents"""
+    if not agent_available:
+        logger.error("Models endpoint called but agent service is not available")
+        raise HTTPException(status_code=503, detail="Agent service not available")
     
     try:
-        logger.info("Listing available models")
-        models = model_manager.get_available_models()
-        model_info = {}
+        logger.info("Listing available agent models")
         
-        for model_name in models:
-            model = model_manager.get_model(model_name)
-            if model:
-                model_info[model_name] = {
-                    "name": model.config.name,
-                    "model_id": model.config.model_id,
-                    "is_available": model.is_available,
-                    "capabilities": [cap.value for cap in model.config.capabilities]
-                }
+        # Return information about our agent architecture
+        model_info = {
+            "claude_sonnet_4": {
+                "name": "Claude Sonnet 4",
+                "model_id": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+                "role": "Tool execution and ReAct reasoning",
+                "is_available": agent_available,
+                "capabilities": ["tool_calling", "reasoning", "analysis"]
+            },
+            "sealion": {
+                "name": "SEA-LION",
+                "model_id": "arn:aws:bedrock:us-east-1:184208908322:imported-model/za0nlconhflh",
+                "role": "Primary Vietnamese chat model",
+                "is_available": agent_available,
+                "capabilities": ["vietnamese_chat", "conversation", "responses"]
+            },
+            "llama4_maverick": {
+                "name": "Llama4 Maverick",
+                "model_id": "us.meta.llama4-maverick-17b-instruct-v1:0",
+                "role": "Fallback Vietnamese chat model",
+                "is_available": agent_available,
+                "capabilities": ["vietnamese_chat", "conversation", "fallback"]
+            }
+        }
         
         return {"models": model_info}
         

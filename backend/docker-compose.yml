@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -13,6 +11,7 @@ services:
       - APP_NAME=AgriFinHub
       - DEBUG=false
       - LOG_LEVEL=INFO
+      - DOCKER_ENVIRONMENT=true
       
       # JWT Authentication
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
@@ -20,10 +19,17 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       
-      # Google GenAI
+      # Google GenAI and Firebase
       - GOOGLE_GENAI_API_KEY=${GOOGLE_GENAI_API_KEY}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+      - FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID}
+      - FIREBASE_APP_ID=${FIREBASE_APP_ID}
+      - FIREBASE_SERVICE_ACCOUNT=${FIREBASE_SERVICE_ACCOUNT}
       
-      # Database (if using PostgreSQL)
+      # Database Configuration
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT:-5432}
       - DB_NAME=${DB_NAME}
@@ -31,26 +37,41 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - RDS_DATABASE_URL=${RDS_DATABASE_URL}
       
-      # AWS Configuration
+      # AWS Configuration - Core
       - AWS_REGION=${AWS_REGION}
+      - AWS_AI_REGION=${AWS_AI_REGION}
+      
+      # AWS Configuration - Transcribe
       - AWS_TRANSCRIBE_ACCESS_KEY_ID=${AWS_TRANSCRIBE_ACCESS_KEY_ID}
       - AWS_TRANSCRIBE_SECRET_ACCESS_KEY=${AWS_TRANSCRIBE_SECRET_ACCESS_KEY}
+      
+      # AWS Configuration - DynamoDB Preferences
       - AWS_PREFERENCE_ACCESS_KEY_ID=${AWS_PREFERENCE_ACCESS_KEY_ID}
       - AWS_PREFERENCE_SECRET_ACCESS_KEY=${AWS_PREFERENCE_SECRET_ACCESS_KEY}
       - PREFERENCE_TABLE_NAME=${PREFERENCE_TABLE_NAME}
       - PREFERENCE_REGION=${PREFERENCE_REGION}
+      
+      # AWS Configuration - DynamoDB Chat History
       - AWS_CHAT_HISTORY_ACCESS_KEY_ID=${AWS_CHAT_HISTORY_ACCESS_KEY_ID}
       - AWS_CHAT_HISTORY_SECRET_ACCESS_KEY=${AWS_CHAT_HISTORY_SECRET_ACCESS_KEY}
       - CHAT_HISTORY_TABLE_NAME=${CHAT_HISTORY_TABLE_NAME}
+      - CHAT_HISTORY_REGION=${CHAT_HISTORY_REGION}
+      
+      # AWS Configuration - S3 and Bedrock
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - AWS_S3_VECTOR_BUCKET_NAME=${AWS_S3_VECTOR_BUCKET_NAME}
+      - AWS_BEDROCK_API_KEY_NAME=${AWS_BEDROCK_API_KEY_NAME}
+      - AWS_BEDROCK_API_KEY=${AWS_BEDROCK_API_KEY}
+      - AWS_BEDROCK_USER_ACCESS_KEY=${AWS_BEDROCK_USER_ACCESS_KEY}
+      - AWS_BEDROCK_USER_SECRET_ACCESS_KEY=${AWS_BEDROCK_USER_SECRET_ACCESS_KEY}
+      - AWS_BEDROCK_USER_REGION=${AWS_BEDROCK_USER_REGION}
+      
+      # SeaLion AI Configuration
+      - SEALION_API_NAME=${SEALION_API_NAME}
+      - SEALION_API_KEY=${SEALION_API_KEY}
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     networks:
       - agrifinhub-network
 

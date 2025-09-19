@@ -1,5 +1,6 @@
 import logging
 import uuid
+import json
 from typing import List, Optional, Dict, Any
 from botocore.exceptions import ClientError
 
@@ -175,7 +176,14 @@ class ChatHistoryRepository:
         
         for key, value in item.items():
             if 'S' in value:
-                result[key] = value['S']
+                # Handle special JSON string fields for sources and tools
+                if key in ['sources', 'tools']:
+                    try:
+                        result[key] = json.loads(value['S'])
+                    except (json.JSONDecodeError, TypeError):
+                        result[key] = []
+                else:
+                    result[key] = value['S']
             elif 'N' in value:
                 result[key] = int(value['N']) if '.' not in value['N'] else float(value['N'])
             elif 'BOOL' in value:

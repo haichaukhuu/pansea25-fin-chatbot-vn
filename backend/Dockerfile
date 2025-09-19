@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     curl \
     netcat-openbsd \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -41,8 +42,9 @@ FROM dependencies AS application
 # Copy application code
 COPY . .
 
-# Make entrypoint script executable
-RUN chmod +x docker-entrypoint.sh
+# Convert line endings and make entrypoint script executable
+RUN dos2unix docker-entrypoint.sh && \
+    chmod +x docker-entrypoint.sh
 
 # Create necessary directories
 RUN mkdir -p /app/logs && \
