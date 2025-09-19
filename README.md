@@ -7,6 +7,10 @@ Our solution, AgriFinHub, is an AI-powered, multi-agent system built on the SEA-
 
 AgriFinHub equips farmers with the skills to make informed decisions, manage resources wisely, and access better financial opportunities. Starting in Vietnam, we will scale across Southeast Asia by adapting to local languages, cultures, and financial systems, driving inclusion and long-term prosperity for smallholder.
 
+## Demo Video
+[![AgriFinHub Demo Video](https://img.youtube.com/vi/2ESKHTgwo6E/0.jpg)](https://www.youtube.com/watch?v=2ESKHTgwo6E)
+### Link: https://www.youtube.com/watch?v=2ESKHTgwo6E
+
 ## Local Testing Instructions
 
 ### Note: Make sure you have Python 3.9+ and Node.js installed on your machine. Please follow the steps shown on their respective websites.
