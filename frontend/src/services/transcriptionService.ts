@@ -107,7 +107,10 @@ export class TranscriptionService {
           }
         });
 
-        const wsUrl = `ws://localhost:8000/api/transcription/stream`;
+        // Use environment variable for WebSocket URL, converting HTTP(S) to WS(S)
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const wsUrl = apiUrl.replace(/^https?:\/\//, (match: string) => match === 'https://' ? 'wss://' : 'ws://') + '/api/transcription/stream';
+        console.log('Connecting to WebSocket:', wsUrl);
         this.websocket = new WebSocket(wsUrl);
 
         this.websocket.onopen = () => {
