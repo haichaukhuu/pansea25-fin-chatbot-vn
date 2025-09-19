@@ -46,9 +46,6 @@ class Config:
     DB_PASSWORD = os.getenv("DB_PASSWORD")
     RDS_DATABASE_URL = os.getenv("RDS_DATABASE_URL")
     
-    # AI Model settings
-    GOOGLE_GENAI_API_KEY = os.getenv("GOOGLE_GENAI_API_KEY")
-    
     # AWS S3 settings for vector store
     AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME")
     AWS_S3_VECTOR_BUCKET_NAME = os.getenv("AWS_S3_VECTOR_BUCKET_NAME")
@@ -70,36 +67,7 @@ class Config:
     DYNAMODB_REGION = os.getenv("DYNAMODB_REGION", "ap-southeast-1")
 
 # Model configurations
-MODEL_CONFIGS = {
-    "gemini_flash": {
-        "name": "Gemini 2.5 Flash",
-        "model_id": "gemini-2.5-flash",
-        "temperature": 0.7,
-        "max_tokens": 4096,
-        "is_primary": True,
-        "capabilities": ["chat", "text_generation", "streaming", "multimodal"],
-        "provider": "google_genai",
-        "model_type": "gemini",
-        "streaming_config": {
-            "chunk_size": "medium",
-            "optimization": "native_streaming"
-        }
-    },
-    "gemini_pro": {
-        "name": "Gemini 2.5 Pro",
-        "model_id": "gemini-2.5-pro",
-        "temperature": 0.6,
-        "max_tokens": 8192,
-        "is_primary": False,
-        "capabilities": ["chat", "text_generation", "streaming", "multimodal", "reasoning"],
-        "provider": "google_genai",
-        "model_type": "gemini",
-        "streaming_config": {
-            "chunk_size": "large",
-            "optimization": "native_streaming"
-        }
-    }
-}
+MODEL_CONFIGS = {}
 
 # API Configuration
 API_CONFIG = {
@@ -118,9 +86,6 @@ API_CONFIG = {
 
 # AI Model Configuration
 AI_CONFIG = {
-    "default_model": "gemini_flash",
-    "api_key": os.getenv("GOOGLE_GENAI_API_KEY"),
-    "fallback_models": ["gemini_pro"],
     "max_retries": 3,
     "timeout": 60,
     "streaming_config": {
@@ -288,10 +253,6 @@ def validate_config() -> bool:
     # Check JWT secret
     if not Config.JWT_SECRET_KEY or Config.JWT_SECRET_KEY == "default_insecure_key_please_change":
         errors.append("JWT_SECRET_KEY is missing or using default (insecure) value")
-    
-    # Check Google GenAI API key
-    if not Config.GOOGLE_GENAI_API_KEY:
-        errors.append("GOOGLE_GENAI_API_KEY is missing")
     
     # Check Database URL
     if not Config.RDS_DATABASE_URL:

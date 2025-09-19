@@ -5,12 +5,6 @@ __pycache__
 test_*
 guide/
 
-# Firebase credentials
-./service-account-key.json
-service-account-*.json
-*.json.secret
-agrifinhub-firebase-adminsdk-*.json
-
 # Python virtual environments
 .venv/
 env/
